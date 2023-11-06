@@ -72,7 +72,7 @@ export class SchrAnfrImporter implements DocumentImporter {
 				return {
 					source_type: this.documentType,
 					source_url: d.LokURL[0],
-					metadata: undefined,
+					metadata: d,
 					registered_at: new Date(),
 				};
 			});
