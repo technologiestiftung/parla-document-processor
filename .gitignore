@@ -272,3 +272,4 @@ cython_debug/
 #.idea/
 ./downloads
 ./markdowns
+./processing_data
