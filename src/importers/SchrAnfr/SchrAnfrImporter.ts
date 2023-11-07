@@ -2,7 +2,7 @@ import { SupabaseClient, createClient } from "@supabase/supabase-js";
 import postgres from "postgres";
 import { Settings } from "../../interfaces/Settings.js";
 import { DocumentImporter } from "../../interfaces/DocumentImporter.js";
-import { parseXML2JSON } from "./parse-xml-to-json.js";
+import { parseXML2JSON } from "./ParseXmlToJson.js";
 
 export class SchrAnfrImporter implements DocumentImporter {
 	documentType: string = "Schriftliche Anfrage";

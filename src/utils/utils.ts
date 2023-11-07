@@ -1,6 +1,6 @@
+import crypto from "crypto";
 import fs from "fs";
 import { PDFDocument } from "pdf-lib";
-import crypto from "crypto";
 
 /**
  * This function checks if the provided value is an array.

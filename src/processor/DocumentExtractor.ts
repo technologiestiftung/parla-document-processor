@@ -3,8 +3,8 @@ import Downloader from "nodejs-file-downloader";
 import path from "path";
 import pdf2img from "pdf-img-convert";
 import { createWorker } from "tesseract.js";
-import { getFileSize, getHash, splitPdf } from "../utils/utils.js";
 import { ProcessedDocument, RegisteredDocument } from "./DocumentsProcessor.js";
+import { getFileSize, getHash, splitPdf } from "../utils/utils.js";
 
 export interface ExtractContract {
 	document: RegisteredDocument;

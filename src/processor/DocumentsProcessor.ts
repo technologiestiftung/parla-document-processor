@@ -51,9 +51,8 @@ export class DocumentsProcessor {
 			const unprocessed = d.processed_documents.length === 0;
 			const processedButNotFinished = d.processed_documents.filter(
 				(pd: ProcessedDocument) =>
-					pd.processing_error ||
-					!pd.processing_started_at ||
-					!pd.processing_finished_at,
+					(pd.processing_started_at && !pd.processing_finished_at) ||
+					!pd.processing_started_at,
 			);
 			return unprocessed || processedButNotFinished;
 		});
@@ -84,7 +83,7 @@ export class DocumentsProcessor {
 	async extract(
 		documents: Array<RegisteredDocument>,
 	): Promise<Array<ExtractionResult>> {
-		const testLoad = documents.slice(0, 100);
+		const testLoad = documents.slice(0, 5);
 		console.log(`Extracting ${testLoad.length} documents...`);
 
 		const extractionResults = await Promise.all(
@@ -135,9 +134,7 @@ export class DocumentsProcessor {
 				.map(async (s) => {
 					const summaryError = s as ProcessingError;
 					const summaryResult = s as SummarizeResult;
-					console.log(summaryError, summaryResult);
 					if (summaryError.error) {
-						console.log("Updating with error");
 						const { data, error } = await this.supabase
 							.from("processed_documents")
 							.update({
@@ -145,9 +142,7 @@ export class DocumentsProcessor {
 								processing_error: (s as ProcessingError).error,
 							})
 							.eq("id", summaryError.processedDocument.id);
-						console.log(data, error);
 					} else {
-						console.log("Updating with summary");
 						const { data, error } = await this.supabase
 							.from("processed_document_summaries")
 							.insert({

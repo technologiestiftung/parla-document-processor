@@ -3,7 +3,11 @@ import { OpenAIApi } from "openai";
 import { ExtractionResult } from "./DocumentExtractor.js";
 import { ProcessedDocument, RegisteredDocument } from "./DocumentsProcessor.js";
 import { Settings } from "../interfaces/Settings.js";
-import { backOff } from "exponential-backoff";
+import {
+	generateEmbedding,
+	generateSummary,
+	generateTags,
+} from "../utils/OpenAiUtils.js";
 
 export interface SummarizeResult {
 	document: RegisteredDocument;
@@ -38,132 +42,33 @@ export class DocumentSummarizor {
 			} as ProcessingError;
 		}
 
+		// Generate page summaries
 		const pageSummaries = await Promise.all(
 			markdownFiles.map(async (mf) => {
 				const markdownText = fs.readFileSync(
 					`${extractionResult.pagesPath}/${mf}`,
 					"utf-8",
 				);
-
-				const summaryResponse = await backOff(
-					async () =>
-						await openAi.createChatCompletion({
-							model: "gpt-3.5-turbo-16k",
-							messages: [
-								{
-									role: "system",
-									content:
-										"Du bist ein politischer Berater und antwortest auf Deutsch in grammatikalisch korrekter und formeller Sprache.",
-								},
-								{
-									role: "user",
-									content: `Fasse das folgende Dokument in weniger als 100 Worten kurz und prägnant zusammen. Die Antwort muss weniger als 100 Worte lang sein. "${markdownText}"`,
-								},
-							],
-							temperature: 0,
-							stream: false,
-						}),
-					{
-						retry: (e: any, attemptNumber: number) => {
-							console.log(
-								`retry #${attemptNumber} in summarizing page ${mf} ...`,
-							);
-							return true;
-						},
-					},
-				);
-
-				if (summaryResponse.status !== 200) {
-					throw new Error("openapi embedding failed");
-				}
-
-				return summaryResponse.data.choices[0].message?.content ?? "";
+				const summaryResponse = await generateSummary(markdownText, openAi);
+				return summaryResponse;
 			}),
 		);
-
-		const summaryText = pageSummaries.join("\n");
+		const combinedPageSummaries = pageSummaries.join("\n");
 
 		// Generate final summary
-		const completeSummary = await backOff(
-			async () =>
-				await openAi.createChatCompletion({
-					model: "gpt-3.5-turbo-16k",
-					messages: [
-						{
-							role: "system",
-							content:
-								"Du bist ein politischer Berater und antwortest auf Deutsch in grammatikalisch korrekter und formeller Sprache.",
-						},
-						{
-							role: "user",
-							content: `Fasse das folgende Dokument in weniger als 100 Worten kurz und prägnant zusammen. Die Antwort muss weniger als 100 Worte lang sein. "${summaryText}"`,
-						},
-					],
-					temperature: 0,
-					stream: false,
-				}),
-			{
-				retry: (e: any, attemptNumber: number) => {
-					console.log(`retry #${attemptNumber} in final summary...`);
-					return true;
-				},
-			},
-		);
+		const finalSummary = await generateSummary(combinedPageSummaries, openAi);
 
 		// Generate embedding
-		const embeddingResponse = await backOff(
-			async () =>
-				await openAi.createEmbedding({
-					model: "text-embedding-ada-002",
-					input: completeSummary.data.choices[0].message?.content ?? "",
-				}),
-			{
-				retry: (e: any, attemptNumber: number) => {
-					console.log(`retry #${attemptNumber} in generating embedding...`);
-					return true;
-				},
-			},
-		);
-
-		if (embeddingResponse.status !== 200) {
-			throw new Error("openapi embedding failed");
-		}
-		const [responseData] = embeddingResponse.data.data;
+		const embedding = await generateEmbedding(finalSummary, openAi);
 
 		// Generate tags
-		const tagSummary = await backOff(
-			async () =>
-				await openAi.createChatCompletion({
-					model: "gpt-3.5-turbo-16k",
-					messages: [
-						{
-							role: "system",
-							content:
-								"Du bist ein System, das in der Lage ist Text in inhaltlich relevante Schlagwörter / Tags zusammenzufassen. Generiere niemals mehr als 10 Tags.",
-						},
-						{
-							role: "user",
-							content: `Extrahiere eine Liste von inhaltlich relevanten Tags aus dem folgenden Text. Generiere nicht mehr als 10 Tags. Gebe die Tags formatiert als JSON Liste zurück: "${summaryText}"`,
-						},
-					],
-					temperature: 0,
-					stream: false,
-				}),
-			{
-				retry: (e: any, attemptNumber: number) => {
-					console.log(`retry #${attemptNumber} in extracting tags...`);
-					return true;
-				},
-			},
-		);
-
-		const tags = JSON.parse(tagSummary.data.choices[0].message?.content ?? "");
+		const tags = await generateTags(combinedPageSummaries, openAi);
 
 		const summaryResponse = {
 			document: extractionResult.document,
 			processedDocument: extractionResult.processedDocument!,
-			summary: completeSummary.data.choices[0].message?.content ?? "",
-			embedding: responseData.embedding,
+			summary: finalSummary,
+			embedding: embedding,
 			tags: tags,
 		};
 
