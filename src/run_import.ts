@@ -1,12 +1,12 @@
 import { Importer } from "./Importer.js";
-import { RedNumberImporter } from "./importers/RedNumberImporter.js";
+import { RedNumberImporter } from "./importers/RedNumbers/RedNumberImporter.js";
 import { SchrAnfrImporter } from "./importers/SchrAnfr/SchrAnfrImporter.js";
 import { Settings } from "./interfaces/DatabaseConnection.js";
 
 const settings = {
 	postgresConnection: process.env.SUPABASE_DB_CONNECTION!,
 	supabaseUrl: process.env.SUPABASE_URL!,
-	supabaseAnonKey: process.env.SUPABASE_ANON_KEY!
+	supabaseAnonKey: process.env.SUPABASE_ANON_KEY!,
 } as Settings;
 
 console.log(settings);
@@ -14,7 +14,7 @@ console.log(settings);
 const schrAnfrImporter = new SchrAnfrImporter(settings);
 const redNumbersImporter = new RedNumberImporter(settings);
 
-const importer = new Importer([schrAnfrImporter, redNumbersImporter]);
+const importer = new Importer([redNumbersImporter]);
 
 await importer.import();
 

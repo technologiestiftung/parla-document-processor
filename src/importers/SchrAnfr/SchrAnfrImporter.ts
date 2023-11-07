@@ -62,11 +62,13 @@ export class SchrAnfrImporter implements DocumentImporter {
 		console.log(`${localDocumentsToAdd.length} documents to add to database`);
 
 		try {
-			await Promise.all(
-				remoteDocumentsToDelete.map(async (d) => {
-					await this.sql`delete from registered_documents where id = ${d.id}`;
-				}),
-			);
+			await this.supabase
+				.from("registered_documents")
+				.delete()
+				.in(
+					"id",
+					remoteDocumentsToDelete.map((d) => d.id),
+				);
 
 			const values = localDocumentsToAdd.map((d) => {
 				return {
