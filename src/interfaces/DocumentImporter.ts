@@ -1,7 +1,7 @@
-import { Settings } from "./DatabaseConnection.js";
+import { Settings } from "./Settings.js";
 
 export interface DocumentImporter {
 	documentType: string;
-	settings:Settings;
+	settings: Settings;
 	import(): Promise<number>;
 }

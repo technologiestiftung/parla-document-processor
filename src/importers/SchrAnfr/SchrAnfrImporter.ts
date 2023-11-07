@@ -1,6 +1,6 @@
 import { SupabaseClient, createClient } from "@supabase/supabase-js";
 import postgres from "postgres";
-import { Settings } from "../../interfaces/DatabaseConnection.js";
+import { Settings } from "../../interfaces/Settings.js";
 import { DocumentImporter } from "../../interfaces/DocumentImporter.js";
 import { parseXML2JSON } from "./parse-xml-to-json.js";
 
