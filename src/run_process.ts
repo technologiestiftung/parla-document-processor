@@ -22,7 +22,7 @@ const processor = new DocumentsProcessor(settings);
 const unprocessedDocuments = await processor.find();
 
 const batches = splitArrayEqually(
-	unprocessedDocuments.slice(0, 20), //TODO: remove
+	unprocessedDocuments.slice(0, 1000), //TODO: remove
 	BATCH_SIZE,
 );
 
