@@ -81,7 +81,6 @@ export interface Settings {
 	supabaseUrl: string;
 	supabaseAnonKey: string;
 	openaAiApiKey: string;
-	maxPagesForSummary: number;
 	processingDirectory: string;
 }
 

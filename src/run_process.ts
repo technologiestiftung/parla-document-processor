@@ -10,7 +10,6 @@ const settings = {
 	supabaseUrl: process.env.SUPABASE_URL!,
 	supabaseAnonKey: process.env.SUPABASE_ANON_KEY!,
 	openaAiApiKey: process.env.OPENAI_API_KEY!,
-	maxPagesForSummary: parseInt(process.env.MAX_PAGES_FOR_SUMMARY!),
 	processingDirectory: process.env.PROCESSING_DIR!,
 } as Settings;
 

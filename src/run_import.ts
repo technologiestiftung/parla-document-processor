@@ -8,7 +8,6 @@ const settings = {
 	supabaseUrl: process.env.SUPABASE_URL!,
 	supabaseAnonKey: process.env.SUPABASE_ANON_KEY!,
 	openaAiApiKey: process.env.OPENAI_API_KEY!,
-	maxPagesForSummary: parseInt(process.env.MAX_PAGES_FOR_SUMMARY!),
 } as Settings;
 
 console.log(settings);
