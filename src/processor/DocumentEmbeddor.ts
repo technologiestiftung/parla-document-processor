@@ -17,6 +17,7 @@ export interface EmbeddingResult {
 	document: RegisteredDocument;
 	processedDocument: ProcessedDocument;
 	embeddings: Array<Embedding>;
+	tokenUsage: number;
 }
 
 export interface Chunk {
@@ -83,10 +84,15 @@ export class DocumentEmbeddor {
 			} as Embedding;
 		});
 
+		const totalTokenUsage = chunkEmbeddings
+			.map((chunk) => chunk.tokenCount)
+			.reduce((total, num) => total + num, 0);
+
 		return {
 			document: extractionResult.document,
 			processedDocument: extractionResult.processedDocument,
 			embeddings: embeddings,
+			tokenUsage: totalTokenUsage,
 		} as EmbeddingResult;
 	}
 }

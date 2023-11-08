@@ -2,6 +2,8 @@ import crypto from "crypto";
 import fs from "fs";
 import { PDFDocument } from "pdf-lib";
 import { get_encoding } from "@dqbd/tiktoken";
+import { SummarizeResult } from "../processor/DocumentSummarizor.js";
+import { EmbeddingResult } from "../processor/DocumentEmbeddor.js";
 
 export const enc = get_encoding("cl100k_base");
 
@@ -97,4 +99,21 @@ export function clearDirectory(path: string) {
 			fs.rmSync(fullPath);
 		}
 	});
+}
+
+export interface TokenUsage {
+	embeddings: number;
+	inputs: number;
+	outputs: number;
+}
+
+export function sumTokens(
+	summarizeResult: SummarizeResult,
+	embeddingResult: EmbeddingResult,
+): TokenUsage {
+	return {
+		embeddings: summarizeResult.embeddingTokens + embeddingResult.tokenUsage,
+		inputs: summarizeResult.inputTokens,
+		outputs: summarizeResult.outputTokens,
+	};
 }

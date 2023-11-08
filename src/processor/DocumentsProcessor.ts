@@ -3,17 +3,13 @@ import { Configuration, OpenAIApi } from "openai";
 import postgres from "postgres";
 import { Database } from "../db/db_schema.js";
 import { Settings } from "../interfaces/Settings.js";
+import { DocumentEmbeddor, EmbeddingResult } from "./DocumentEmbeddor.js";
 import {
 	DocumentExtractor,
 	ExtractContract,
 	ExtractionResult,
 } from "./DocumentExtractor.js";
-import {
-	DocumentSummarizor,
-	ProcessingError,
-	SummarizeResult,
-} from "./DocumentSummarizor.js";
-import { DocumentEmbeddor, EmbeddingResult } from "./DocumentEmbeddor.js";
+import { DocumentSummarizor, SummarizeResult } from "./DocumentSummarizor.js";
 
 export type RegisteredDocument =
 	Database["public"]["Tables"]["registered_documents"]["Row"];
@@ -50,12 +46,18 @@ export class DocumentsProcessor {
 
 		const unprocessedDocuments = (data ?? []).filter((d) => {
 			const unprocessed = d.processed_documents.length === 0;
-			const processedButNotFinished = d.processed_documents.filter(
-				(pd: ProcessedDocument) =>
-					(pd.processing_started_at && !pd.processing_finished_at) ||
-					!pd.processing_started_at,
-			);
-			return unprocessed || processedButNotFinished;
+
+			const processedButUnsuccessful =
+				d.processed_documents.filter(
+					(pd: ProcessedDocument) =>
+						(pd.processing_started_at &&
+							pd.processing_finished_at &&
+							pd.processing_error) ||
+						(pd.processing_started_at && !pd.processing_finished_at) ||
+						!pd.processing_started_at,
+				).length > 0;
+
+			return unprocessed || processedButUnsuccessful;
 		});
 
 		const processedDocumentsToCleanup = unprocessedDocuments.flatMap(
@@ -104,37 +106,19 @@ export class DocumentsProcessor {
 	async summarize(
 		extractionResult: ExtractionResult,
 	): Promise<SummarizeResult> {
-		try {
-			const summary = await DocumentSummarizor.summarize(
-				extractionResult,
-				this.openAi,
-				this.settings,
-			);
-			const { data, error } = await this.supabase
-				.from("processed_document_summaries")
-				.insert({
-					summary: summary.summary,
-					summary_embedding: summary.embedding,
-					tags: summary.tags,
-					processed_document_id: summary.processedDocument.id,
-				});
-			return summary;
-		} catch (e) {
-			if (e instanceof ProcessingError) {
-				const { data, error } = await this.supabase
-					.from("processed_documents")
-					.update({
-						processing_finished_at: new Date(),
-						processing_error: e.error,
-					})
-					.eq("id", e.processedDocument.id);
-
-				throw e;
-			} else {
-				console.log(e);
-				process.exit(1);
-			}
-		}
+		const summary = await DocumentSummarizor.summarize(
+			extractionResult,
+			this.openAi,
+		);
+		const { data, error } = await this.supabase
+			.from("processed_document_summaries")
+			.insert({
+				summary: summary.summary,
+				summary_embedding: summary.embedding,
+				tags: summary.tags,
+				processed_document_id: summary.processedDocument.id,
+			});
+		return summary;
 	}
 
 	async embedd(extractionResult: ExtractionResult): Promise<EmbeddingResult> {
@@ -165,6 +149,19 @@ export class DocumentsProcessor {
 		const { data, error } = await this.supabase
 			.from("processed_documents")
 			.update({ processing_finished_at: new Date() })
+			.eq("id", extractionResult.processedDocument!.id);
+	}
+
+	async finishWithError(
+		extractionResult: ExtractionResult,
+		errorMessage: string,
+	) {
+		const { data, error } = await this.supabase
+			.from("processed_documents")
+			.update({
+				processing_finished_at: new Date(),
+				processing_error: errorMessage,
+			})
 			.eq("id", extractionResult.processedDocument!.id);
 	}
 }

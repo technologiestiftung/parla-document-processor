@@ -1,13 +1,13 @@
 import fs from "fs";
 import { OpenAIApi } from "openai";
-import { ExtractionResult } from "./DocumentExtractor.js";
-import { ProcessedDocument, RegisteredDocument } from "./DocumentsProcessor.js";
-import { Settings } from "../interfaces/Settings.js";
 import {
 	generateEmbedding,
 	generateSummary,
 	generateTags,
 } from "../utils/OpenAiUtils.js";
+import { enc } from "../utils/utils.js";
+import { ExtractionResult } from "./DocumentExtractor.js";
+import { ProcessedDocument, RegisteredDocument } from "./DocumentsProcessor.js";
 
 export interface SummarizeResult {
 	document: RegisteredDocument;
@@ -16,10 +16,15 @@ export interface SummarizeResult {
 	summary: string;
 	embedding: Array<number>;
 	tags: Array<string>;
-	tokenUsage: number;
+	embeddingTokens: number;
+	inputTokens: number;
+	outputTokens: number;
 }
 
 export interface ProcessingError {}
+
+// We use a model with 16k context size, we reserve 1k for the prompt so that we can send 15k tokens as payload
+const MAX_TOKEN_COUNT_FOR_SUMMARY = 15000;
 
 export class ProcessingError extends Error {
 	document: RegisteredDocument;
@@ -41,66 +46,54 @@ export class DocumentSummarizor {
 	static async summarize(
 		extractionResult: ExtractionResult,
 		openAi: OpenAIApi,
-		settings: Settings,
 	): Promise<SummarizeResult> {
 		const markdownFiles = fs
 			.readdirSync(extractionResult.pagesPath)
 			.filter((file) => file.endsWith(".md"))
 			.sort();
 
-		if (markdownFiles.length > settings.maxPagesForSummary) {
-			throw new ProcessingError(
-				extractionResult.document,
-				extractionResult.processedDocument!,
-				`SummarizeError: Document has ${markdownFiles.length} pages, summary is only available for <= ${settings.maxPagesForSummary} pages.`,
-			);
-		}
-
 		// Generate page summaries
-		const pageSummaries = await Promise.all(
+		const markdownTexts = await Promise.all(
 			markdownFiles.map(async (mf) => {
 				const markdownText = fs.readFileSync(
 					`${extractionResult.pagesPath}/${mf}`,
 					"utf-8",
 				);
-				const summaryResponse = await generateSummary(markdownText, openAi);
-				return summaryResponse;
+				return markdownText;
 			}),
 		);
-		const combinedPageSummariesTokenUsage = pageSummaries
-			.map((x) => x.tokenUsage)
-			.reduce((total, num) => total + num, 0);
-		const combinedPageSummaries = pageSummaries.map((x) => x.result).join("\n");
 
-		// Generate final summary
-		const finalSummaryResponse = await generateSummary(
-			combinedPageSummaries,
-			openAi,
-		);
+		const completeMarkdown = markdownTexts.join("\n");
+
+		// Generate summary for documents < MAX_TOKEN_COUNT_FOR_SUMMARY tokens
+		const tokens = enc.encode(completeMarkdown).length;
+		if (tokens > MAX_TOKEN_COUNT_FOR_SUMMARY) {
+			throw new ProcessingError(
+				extractionResult.document,
+				extractionResult.processedDocument!,
+				`SummarizeError: Document is too big too summarize (${tokens} tokens), summary is only available for <= ${MAX_TOKEN_COUNT_FOR_SUMMARY} tokens.`,
+			);
+		}
+
+		// Generate summary
+		const summary = await generateSummary(completeMarkdown, openAi);
 
 		// Generate embedding
-		const embeddingResponse = await generateEmbedding(
-			finalSummaryResponse.result,
-			openAi,
-		);
+		const embeddingResponse = await generateEmbedding(summary.result, openAi);
 
 		// Generate tags
-		const tagsResponse = await generateTags(combinedPageSummaries, openAi);
-
-		const totalTokenUsage =
-			combinedPageSummariesTokenUsage +
-			finalSummaryResponse.tokenUsage +
-			embeddingResponse.tokenUsage +
-			tagsResponse.tokenUsage;
+		const tagsResponse = await generateTags(summary.result, openAi);
 
 		const summaryResponse = {
 			document: extractionResult.document,
 			processedDocument: extractionResult.processedDocument!,
-			summary: finalSummaryResponse.result,
+			summary: summary.result,
 			embedding: embeddingResponse.embedding,
 			tags: tagsResponse.tags,
 			pagesPath: extractionResult.pagesPath,
-			tokenUsage: totalTokenUsage,
+			embeddingTokens: embeddingResponse.tokenUsage,
+			inputTokens: summary.inputTokens,
+			outputTokens: summary.outputTokens,
 		};
 
 		return summaryResponse;

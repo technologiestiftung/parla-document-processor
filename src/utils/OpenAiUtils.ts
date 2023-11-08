@@ -3,7 +3,8 @@ import { backOff } from "exponential-backoff";
 
 export interface OpenAITextResponse {
 	result: string;
-	tokenUsage: number;
+	inputTokens: number;
+	outputTokens: number;
 }
 
 export interface OpenAIEmbeddingResponse {
@@ -13,7 +14,8 @@ export interface OpenAIEmbeddingResponse {
 
 export interface OpenAITagsResponse {
 	tags: Array<string>;
-	tokenUsage: number;
+	inputTokens: number;
+	outputTokens: number;
 }
 
 export async function generateEmbedding(
@@ -70,9 +72,11 @@ export async function generateTags(
 		},
 	);
 	const tags = JSON.parse(tagSummary.data.choices[0].message?.content ?? "");
+
 	return {
 		tags: tags,
-		tokenUsage: tagSummary.data.usage?.total_tokens ?? 0,
+		inputTokens: tagSummary.data.usage?.prompt_tokens ?? 0,
+		outputTokens: tagSummary.data.usage?.completion_tokens ?? 0,
 	};
 }
 
@@ -108,6 +112,7 @@ export async function generateSummary(
 
 	return {
 		result: completeSummary.data.choices[0].message?.content ?? "",
-		tokenUsage: completeSummary.data.usage?.total_tokens ?? 0,
+		inputTokens: completeSummary.data.usage?.prompt_tokens ?? 0,
+		outputTokens: completeSummary.data.usage?.completion_tokens ?? 0,
 	};
 }
