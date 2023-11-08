@@ -1,0 +1,109 @@
+{
+	"name": "@technologiestiftung/ki-anfragen-data-extractor",
+	"version": "1.0.1",
+	"description": "",
+	"main": "index.js",
+	"type": "module",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 0"
+	},
+	"keywords": [],
+	"license": "MIT",
+	"engines": {
+		"node": ">=20.0.0"
+	},
+	"devDependencies": {
+		"@technologiestiftung/semantic-release-config": "1.2.3",
+		"@types/command-line-args": "^5.2.0",
+		"@types/node": "20.4.9",
+		"@types/progress": "2.0.5",
+		"@types/xml2js": "0.4.11",
+		"@typescript-eslint/eslint-plugin": "6.3.0",
+		"@typescript-eslint/parser": "6.3.0",
+		"eslint": "8.46.0",
+		"eslint-config-prettier": "9.0.0",
+		"prettier": "3.0.1",
+		"tsx": "3.12.7",
+		"typescript": "5.1.6"
+	},
+	"eslintConfig": {
+		"env": {
+			"es2021": true,
+			"node": true
+		},
+		"extends": [
+			"eslint:recommended",
+			"plugin:@typescript-eslint/recommended"
+		],
+		"overrides": [
+			{
+				"env": {
+					"node": true
+				},
+				"files": [
+					".eslintrc.{js,cjs}"
+				],
+				"parserOptions": {
+					"sourceType": "script"
+				}
+			}
+		],
+		"parser": "@typescript-eslint/parser",
+		"parserOptions": {
+			"ecmaVersion": "latest",
+			"sourceType": "module"
+		},
+		"plugins": [
+			"@typescript-eslint"
+		],
+		"rules": {
+			"indent": [
+				"error",
+				"tab"
+			],
+			"linebreak-style": [
+				"error",
+				"unix"
+			],
+			"quotes": [
+				"error",
+				"double"
+			],
+			"semi": [
+				"error",
+				"always"
+			]
+		}
+	},
+	"prettier": {
+		"tabWidth": 2,
+		"semi": true,
+		"singleQuote": false,
+		"useTabs": true,
+		"printWidth": 80
+	},
+	"release": {
+		"extends": "@technologiestiftung/semantic-release-config",
+		"npmPublish": false,
+		"branches": [
+			{
+				"name": "main"
+			}
+		]
+	},
+	"dependencies": {
+		"@dqbd/tiktoken": "^1.0.7",
+		"@opendocsg/pdf2md": "^0.1.26",
+		"@supabase/supabase-js": "^2.32.0",
+		"command-line-args": "^5.2.1",
+		"exponential-backoff": "3.1.1",
+		"nodejs-file-downloader": "^4.12.1",
+		"openai": "^3.3.0",
+		"pdf-img-convert": "1.2.1",
+		"pdf-lib": "^1.17.1",
+		"postgres": "^3.3.5",
+		"progress": "^2.0.3",
+		"tesseract.js": "5.0.3",
+		"xml2js": "0.6.2"
+	}
+}
