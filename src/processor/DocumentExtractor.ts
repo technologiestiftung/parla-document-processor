@@ -8,12 +8,26 @@ import {
 	ExtractRequest,
 	ExtractedFile,
 	ExtractionResult,
+	RegisteredDocument,
 } from "../interfaces/Common.js";
+// @ts-ignore
+import pdf from "pdf-page-counter";
 
 const MAGIC_TEXT_TOO_SHORT_LENGTH = 32;
 const MAGIC_OCR_WIDTH = 2048;
 const MAGIC_OCR_HEIGHT = 2887;
 const MAGIC_TIMEOUT = 100000;
+const MAGIC_PAGES_LIMIT = 100;
+
+export class ExtractError extends Error {
+	document: RegisteredDocument;
+	error: string;
+	constructor(document: RegisteredDocument, error: string) {
+		super();
+		this.document = document;
+		this.error = error;
+	}
+}
 
 export class DocumentExtractor {
 	static async extract(
@@ -44,6 +58,16 @@ export class DocumentExtractor {
 
 		const pagesFolder = `${subfolder}/pages`;
 		fs.mkdirSync(pagesFolder);
+
+		let dataBuffer = fs.readFileSync(pathToPdf);
+		const pdfStat = await pdf(dataBuffer);
+		const numPages = pdfStat.numpages;
+		if (numPages > MAGIC_PAGES_LIMIT) {
+			throw new ExtractError(
+				extractRequest.document,
+				`Could not extract ${extractRequest.document.source_url}, num pages ${numPages} > limit of ${MAGIC_PAGES_LIMIT} pages.`,
+			);
+		}
 
 		await splitPdf(pathToPdf, filename, pagesFolder);
 

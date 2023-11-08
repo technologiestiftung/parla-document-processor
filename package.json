@@ -101,6 +101,7 @@
 		"openai": "^3.3.0",
 		"pdf-img-convert": "1.2.1",
 		"pdf-lib": "^1.17.1",
+		"pdf-page-counter": "1.0.3",
 		"postgres": "^3.3.5",
 		"progress": "^2.0.3",
 		"tesseract.js": "5.0.3",

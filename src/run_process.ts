@@ -1,7 +1,11 @@
 import { Settings } from "./interfaces/Common.js";
-import { ProcessingError } from "./processor/DocumentSummarizor.js";
 import { DocumentsProcessor } from "./processor/DocumentsProcessor.js";
-import { clearDirectory, splitArrayEqually, sumTokens } from "./utils/utils.js";
+import {
+	clearDirectory,
+	handleError,
+	splitArrayEqually,
+	sumTokens,
+} from "./utils/utils.js";
 
 const BATCH_SIZE = 5;
 
@@ -18,7 +22,13 @@ const processor = new DocumentsProcessor(settings);
 const unprocessedDocuments = await processor.find();
 
 const batches = splitArrayEqually(
-	unprocessedDocuments.slice(0, 20), //TODO: remove
+	unprocessedDocuments
+		.filter(
+			(d) =>
+				d.source_url.includes("h19-0200-Anlage-v.pdf") ||
+				d.source_url.includes("h19-0338-v.pdf"),
+		)
+		.slice(0, 20), //TODO: remove
 	BATCH_SIZE,
 );
 
@@ -32,32 +42,32 @@ for (let idx = 0; idx < batches.length; idx++) {
 	await Promise.all(
 		documentBatch.map(async (document) => {
 			console.log(`Processing ${document.source_url} in batch ${idx}...`);
-			const extractionResult = await processor.extract(document);
-
 			try {
-				const summarizeResult = await processor.summarize(extractionResult);
-				const embeddingResult = await processor.embedd(extractionResult);
-				await processor.finish(extractionResult);
+				const extractionResult = await processor.extract(document);
+				try {
+					const summarizeResult = await processor.summarize(extractionResult);
+					const embeddingResult = await processor.embedd(extractionResult);
+					await processor.finish(extractionResult.processedDocument!);
 
-				const tokens = sumTokens(summarizeResult, embeddingResult);
+					const tokens = sumTokens(summarizeResult, embeddingResult);
 
-				embeddingTokenCount += tokens.embeddings;
-				inputTokenCount += tokens.inputs;
-				outputTokenCount += tokens.outputs;
+					embeddingTokenCount += tokens.embeddings;
+					inputTokenCount += tokens.inputs;
+					outputTokenCount += tokens.outputs;
 
-				console.log(
-					`Finished processing ${document.source_url} in batch ${idx} with inputTokens=${tokens.inputs} and outputTokens = ${tokens.outputs} and embeddingTokens = ${tokens.embeddings}`,
-				);
-			} catch (e) {
-				if (e instanceof ProcessingError) {
-					await processor.finishWithError(extractionResult, e.error);
-					console.log(`Error processing ${document.source_url}: ${e.error}`);
-				} else {
-					await processor.finishWithError(extractionResult, JSON.stringify(e));
 					console.log(
-						`Error processing ${document.source_url}: ${JSON.stringify(e)}`,
+						`Finished processing ${document.source_url} in batch ${idx} with inputTokens=${tokens.inputs} and outputTokens = ${tokens.outputs} and embeddingTokens = ${tokens.embeddings}`,
+					);
+				} catch (e) {
+					await handleError(
+						e,
+						document,
+						extractionResult.processedDocument,
+						processor,
 					);
 				}
+			} catch (e) {
+				await handleError(e, document, undefined, processor);
 			}
 		}),
 	);

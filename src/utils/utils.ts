@@ -6,7 +6,12 @@ import {
 	SummarizeResult,
 	EmbeddingResult,
 	TokenUsage,
+	ProcessedDocument,
+	RegisteredDocument,
 } from "../interfaces/Common.js";
+import { ExtractError } from "../processor/DocumentExtractor.js";
+import { ProcessingError } from "../processor/DocumentSummarizor.js";
+import { DocumentsProcessor } from "../processor/DocumentsProcessor.js";
 
 export const enc = get_encoding("cl100k_base");
 
@@ -113,4 +118,22 @@ export function sumTokens(
 		inputs: summarizeResult.inputTokens,
 		outputs: summarizeResult.outputTokens,
 	};
+}
+
+export async function handleError(
+	e: any,
+	document: RegisteredDocument,
+	processedDocument: ProcessedDocument | undefined,
+	processor: DocumentsProcessor,
+) {
+	if (e instanceof ProcessingError) {
+		await processor.finishWithError(e.processedDocument, e.error);
+		console.log(`Error processing ${processedDocument?.id}: ${e.error}`);
+	} else if (e instanceof ExtractError) {
+		console.log(
+			`Error extracting document ${document?.id}: ${JSON.stringify(e)}`,
+		);
+	} else {
+		console.log(`Error: ${JSON.stringify(e)}`);
+	}
 }

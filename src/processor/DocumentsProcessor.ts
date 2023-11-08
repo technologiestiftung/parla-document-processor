@@ -141,15 +141,15 @@ export class DocumentsProcessor {
 		return embeddingResult;
 	}
 
-	async finish(extractionResult: ExtractionResult) {
+	async finish(processedDocument: ProcessedDocument) {
 		const { data, error } = await this.supabase
 			.from("processed_documents")
 			.update({ processing_finished_at: new Date() })
-			.eq("id", extractionResult.processedDocument!.id);
+			.eq("id", processedDocument.id);
 	}
 
 	async finishWithError(
-		extractionResult: ExtractionResult,
+		processedDocument: ProcessedDocument,
 		errorMessage: string,
 	) {
 		const { data, error } = await this.supabase
@@ -158,6 +158,6 @@ export class DocumentsProcessor {
 				processing_finished_at: new Date(),
 				processing_error: errorMessage,
 			})
-			.eq("id", extractionResult.processedDocument!.id);
+			.eq("id", processedDocument.id);
 	}
 }
