@@ -7,7 +7,7 @@ import {
 	sumTokens,
 } from "./utils/utils.js";
 
-const BATCH_SIZE = 5;
+const BATCH_SIZE = 20;
 
 const settings = {
 	postgresConnection: process.env.SUPABASE_DB_CONNECTION!,
