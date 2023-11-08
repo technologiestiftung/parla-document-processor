@@ -1,21 +1,18 @@
 import { SupabaseClient, createClient } from "@supabase/supabase-js";
 import { Configuration, OpenAIApi } from "openai";
 import postgres from "postgres";
-import { Database } from "../db/db_schema.js";
-import { Settings } from "../interfaces/Settings.js";
-import { DocumentEmbeddor, EmbeddingResult } from "./DocumentEmbeddor.js";
 import {
-	DocumentExtractor,
-	ExtractContract,
+	EmbeddingResult,
+	ExtractRequest,
 	ExtractionResult,
-} from "./DocumentExtractor.js";
-import { DocumentSummarizor, SummarizeResult } from "./DocumentSummarizor.js";
-
-export type RegisteredDocument =
-	Database["public"]["Tables"]["registered_documents"]["Row"];
-
-export type ProcessedDocument =
-	Database["public"]["Tables"]["processed_documents"]["Row"];
+	ProcessedDocument,
+	RegisteredDocument,
+	Settings,
+	SummarizeResult,
+} from "../interfaces/Common.js";
+import { DocumentEmbeddor } from "./DocumentEmbeddor.js";
+import { DocumentExtractor } from "./DocumentExtractor.js";
+import { DocumentSummarizor } from "./DocumentSummarizor.js";
 
 export class DocumentsProcessor {
 	settings: Settings;
@@ -87,7 +84,7 @@ export class DocumentsProcessor {
 		const extractionResult = await DocumentExtractor.extract({
 			document: document,
 			targetPath: this.settings.processingDirectory,
-		} as ExtractContract);
+		} as ExtractRequest);
 
 		const { data } = await this.supabase
 			.from("processed_documents")
@@ -125,7 +122,6 @@ export class DocumentsProcessor {
 		const embeddingResult = await DocumentEmbeddor.embedd(
 			extractionResult,
 			this.openAi,
-			this.settings,
 		);
 
 		const { data, error } = await this.supabase

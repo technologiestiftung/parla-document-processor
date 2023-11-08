@@ -6,24 +6,14 @@ import {
 	generateTags,
 } from "../utils/OpenAiUtils.js";
 import { enc } from "../utils/utils.js";
-import { ExtractionResult } from "./DocumentExtractor.js";
-import { ProcessedDocument, RegisteredDocument } from "./DocumentsProcessor.js";
+import {
+	RegisteredDocument,
+	ProcessedDocument,
+	ExtractionResult,
+	SummarizeResult,
+} from "../interfaces/Common.js";
 
-export interface SummarizeResult {
-	document: RegisteredDocument;
-	processedDocument: ProcessedDocument;
-	pagesPath: string;
-	summary: string;
-	embedding: Array<number>;
-	tags: Array<string>;
-	embeddingTokens: number;
-	inputTokens: number;
-	outputTokens: number;
-}
-
-export interface ProcessingError {}
-
-// We use a model with 16k context size, we reserve 1k for the prompt so that we can send 15k tokens as payload
+// We use a model with 16k context size, we reserve 1k for the prompt so that we can send ~15k tokens as payload
 const MAX_TOKEN_COUNT_FOR_SUMMARY = 15000;
 
 export class ProcessingError extends Error {

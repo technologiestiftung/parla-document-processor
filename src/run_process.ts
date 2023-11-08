@@ -1,4 +1,4 @@
-import { Settings } from "./interfaces/Settings.js";
+import { Settings } from "./interfaces/Common.js";
 import { ProcessingError } from "./processor/DocumentSummarizor.js";
 import { DocumentsProcessor } from "./processor/DocumentsProcessor.js";
 import { clearDirectory, splitArrayEqually, sumTokens } from "./utils/utils.js";
@@ -18,7 +18,10 @@ const processor = new DocumentsProcessor(settings);
 
 const unprocessedDocuments = await processor.find();
 
-const batches = splitArrayEqually(unprocessedDocuments, BATCH_SIZE);
+const batches = splitArrayEqually(
+	unprocessedDocuments.slice(0, 20), //TODO: remove
+	BATCH_SIZE,
+);
 
 let embeddingTokenCount = 0;
 let inputTokenCount = 0;

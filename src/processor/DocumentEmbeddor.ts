@@ -1,31 +1,13 @@
 import fs from "fs";
 import { OpenAIApi } from "openai";
-import { Settings } from "../interfaces/Settings.js";
 import { generateEmbedding } from "../utils/OpenAiUtils.js";
 import { enc, splitInChunksAccordingToTokenLimit } from "../utils/utils.js";
-import { ExtractionResult } from "./DocumentExtractor.js";
-import { ProcessedDocument, RegisteredDocument } from "./DocumentsProcessor.js";
-
-export interface Embedding {
-	content: string;
-	embedding: Array<number>;
-	chunkIndex: number;
-	page: number;
-}
-
-export interface EmbeddingResult {
-	document: RegisteredDocument;
-	processedDocument: ProcessedDocument;
-	embeddings: Array<Embedding>;
-	tokenUsage: number;
-}
-
-export interface Chunk {
-	content: string;
-	page: number;
-	chunkIndex: number;
-	tokenCount: number;
-}
+import {
+	ExtractionResult,
+	EmbeddingResult,
+	Chunk,
+	Embedding,
+} from "../interfaces/Common.js";
 
 // Magic token limit assuming we use a model with 16k context token limit
 // With that limit, we can feed max. 10 chunks (+ prompt + query) to the completion
@@ -36,7 +18,6 @@ export class DocumentEmbeddor {
 	static async embedd(
 		extractionResult: ExtractionResult,
 		openAi: OpenAIApi,
-		settings: Settings,
 	): Promise<EmbeddingResult> {
 		let totalMarkdownData = "";
 		let chunks: Array<Chunk> = [];

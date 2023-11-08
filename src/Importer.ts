@@ -1,4 +1,4 @@
-import { DocumentImporter } from "./interfaces/DocumentImporter.js";
+import { DocumentImporter } from "./interfaces/Common.js";
 
 export class Importer {
 	importers: Array<DocumentImporter>;

@@ -1,22 +1,10 @@
 import { OpenAIApi } from "openai";
 import { backOff } from "exponential-backoff";
-
-export interface OpenAITextResponse {
-	result: string;
-	inputTokens: number;
-	outputTokens: number;
-}
-
-export interface OpenAIEmbeddingResponse {
-	embedding: Array<number>;
-	tokenUsage: number;
-}
-
-export interface OpenAITagsResponse {
-	tags: Array<string>;
-	inputTokens: number;
-	outputTokens: number;
-}
+import {
+	OpenAIEmbeddingResponse,
+	OpenAITagsResponse,
+	OpenAITextResponse,
+} from "../interfaces/Common.js";
 
 export async function generateEmbedding(
 	content: string,

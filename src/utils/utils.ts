@@ -2,8 +2,7 @@ import crypto from "crypto";
 import fs from "fs";
 import { PDFDocument } from "pdf-lib";
 import { get_encoding } from "@dqbd/tiktoken";
-import { SummarizeResult } from "../processor/DocumentSummarizor.js";
-import { EmbeddingResult } from "../processor/DocumentEmbeddor.js";
+import { SummarizeResult, EmbeddingResult } from "../interfaces/Common.js";
 
 export const enc = get_encoding("cl100k_base");
 

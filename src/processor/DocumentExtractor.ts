@@ -3,31 +3,22 @@ import Downloader from "nodejs-file-downloader";
 import path from "path";
 import pdf2img from "pdf-img-convert";
 import { createWorker } from "tesseract.js";
-import { ProcessedDocument, RegisteredDocument } from "./DocumentsProcessor.js";
 import { getFileSize, getHash, splitPdf } from "../utils/utils.js";
+import {
+	ExtractRequest,
+	ExtractedFile,
+	ExtractionResult,
+} from "../interfaces/Common.js";
 
-export interface ExtractContract {
-	document: RegisteredDocument;
-	targetPath: string;
-}
-
-export interface ExtractedFile {
-	page: number;
-	path: string;
-}
-
-export interface ExtractionResult {
-	document: RegisteredDocument;
-	processedDocument: ProcessedDocument | undefined;
-	pagesPath: string;
-	fileSize: number;
-	numPages: number;
-	checksum: string;
-	extractedFiles: Array<ExtractedFile>;
-}
+const MAGIC_TEXT_TOO_SHORT_LENGTH = 32;
+const MAGIC_OCR_WIDTH = 2048;
+const MAGIC_OCR_HEIGHT = 2887;
+const MAGIC_TIMEOUT = 100000;
 
 export class DocumentExtractor {
-	static async extract(contract: ExtractContract): Promise<ExtractionResult> {
+	static async extract(
+		extractRequest: ExtractRequest,
+	): Promise<ExtractionResult> {
 		// Attention: order is important because "@opendocsg/pdf2md" sets a global "document" variable
 		// which clashes with the createWorker() function because it then thinks it is inside a browser
 		const worker = await createWorker("deu");
@@ -35,20 +26,20 @@ export class DocumentExtractor {
 		const pdf2md = (await import("@opendocsg/pdf2md")).default;
 		// End of attention
 
-		const filename = contract.document.source_url.split("/").slice(-1)[0];
+		const filename = extractRequest.document.source_url.split("/").slice(-1)[0];
 
 		const filenameWithoutExtension = filename.replace(".pdf", "");
 
-		const subfolder = `${contract.targetPath}/${filenameWithoutExtension}`;
+		const subfolder = `${extractRequest.targetPath}/${filenameWithoutExtension}`;
 		fs.mkdirSync(subfolder);
 
 		const pathToPdf = `${subfolder}/${filename}`;
 
 		// @ts-ignore
 		await new Downloader({
-			url: contract.document.source_url,
+			url: extractRequest.document.source_url,
 			directory: subfolder,
-			timeout: 100000,
+			timeout: MAGIC_TIMEOUT,
 		}).download();
 
 		const pagesFolder = `${subfolder}/pages`;
@@ -72,10 +63,10 @@ export class DocumentExtractor {
 			mdText = await pdf2md(pdfBuffer, null);
 
 			// Fallback in case pdf2md fails to extract any text: Convert to Image, use OCR to extract text
-			if (mdText.length < 32) {
+			if (mdText.length < MAGIC_TEXT_TOO_SHORT_LENGTH) {
 				const image = await pdf2img.convert(`${pagesFolder}/${pdfPageFile}`, {
-					width: 2048,
-					height: 2887,
+					width: MAGIC_OCR_WIDTH,
+					height: MAGIC_OCR_HEIGHT,
 				});
 				const pdfImagePage = pdfPageFile.replace(".pdf", ".png");
 				fs.writeFileSync(pdfImagePage, image[0]);
@@ -98,7 +89,7 @@ export class DocumentExtractor {
 		await worker.terminate();
 
 		return {
-			document: contract.document,
+			document: extractRequest.document,
 			processedDocument: undefined,
 			pagesPath: pagesFolder,
 			fileSize: getFileSize(pathToPdf),
