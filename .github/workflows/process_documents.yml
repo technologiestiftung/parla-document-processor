@@ -3,7 +3,7 @@ name: Process documents
 on:
   workflow_dispatch: {}
   repository_dispatch:
-    types: [process_documents]
+    types: [ki_anfragen_process_documents]
 
 jobs:
   process_documents:
@@ -19,4 +19,6 @@ jobs:
       - name: preparation
         run: npm ci && mkdir -p processing_data
       - name: register documents
-        run: export PROCESSING_DIR=$(pwd)/processing_data && npx tsx ./src/run_import.ts
+        run: npx tsx ./src/run_import.ts
+      - name: process documents
+        run: export PROCESSING_DIR=$(pwd)/processing_data && npx tsx ./src/run_process.ts
