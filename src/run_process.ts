@@ -22,13 +22,7 @@ const processor = new DocumentsProcessor(settings);
 const unprocessedDocuments = await processor.find();
 
 const batches = splitArrayEqually(
-	unprocessedDocuments
-		.filter(
-			(d) =>
-				d.source_url.includes("h19-0200-Anlage-v.pdf") ||
-				d.source_url.includes("h19-0338-v.pdf"),
-		)
-		.slice(0, 20), //TODO: remove
+	unprocessedDocuments.slice(0, 20), //TODO: remove
 	BATCH_SIZE,
 );
 
