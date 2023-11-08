@@ -1,4 +1,4 @@
-import { Importer } from "./Importer.js";
+import { Importer } from "./importers/Importer.js";
 import { RedNumberImporter } from "./importers/RedNumbers/RedNumberImporter.js";
 import { SchrAnfrImporter } from "./importers/SchrAnfr/SchrAnfrImporter.js";
 import { Settings } from "./interfaces/Common.js";

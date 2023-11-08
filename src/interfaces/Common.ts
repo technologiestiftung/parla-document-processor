@@ -84,6 +84,12 @@ export interface Settings {
 	processingDirectory: string;
 }
 
+export interface TokenUsage {
+	embeddings: number;
+	inputs: number;
+	outputs: number;
+}
+
 export type RegisteredDocument =
 	Database["public"]["Tables"]["registered_documents"]["Row"];
 

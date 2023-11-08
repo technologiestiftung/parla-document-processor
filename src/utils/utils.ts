@@ -2,7 +2,11 @@ import crypto from "crypto";
 import fs from "fs";
 import { PDFDocument } from "pdf-lib";
 import { get_encoding } from "@dqbd/tiktoken";
-import { SummarizeResult, EmbeddingResult } from "../interfaces/Common.js";
+import {
+	SummarizeResult,
+	EmbeddingResult,
+	TokenUsage,
+} from "../interfaces/Common.js";
 
 export const enc = get_encoding("cl100k_base");
 
@@ -98,12 +102,6 @@ export function clearDirectory(path: string) {
 			fs.rmSync(fullPath);
 		}
 	});
-}
-
-export interface TokenUsage {
-	embeddings: number;
-	inputs: number;
-	outputs: number;
 }
 
 export function sumTokens(
