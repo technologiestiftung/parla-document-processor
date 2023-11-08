@@ -84,7 +84,7 @@ export class DocumentsProcessor {
 	async extract(document: RegisteredDocument): Promise<ExtractionResult> {
 		const extractionResult = await DocumentExtractor.extract({
 			document: document,
-			targetPath: "./processing_data",
+			targetPath: this.settings.processingDirectory,
 		} as ExtractContract);
 
 		const { data } = await this.supabase
@@ -159,5 +159,12 @@ export class DocumentsProcessor {
 			);
 
 		return embeddingResult;
+	}
+
+	async finish(extractionResult: ExtractionResult) {
+		const { data, error } = await this.supabase
+			.from("processed_documents")
+			.update({ processing_finished_at: new Date() })
+			.eq("id", extractionResult.processedDocument!.id);
 	}
 }

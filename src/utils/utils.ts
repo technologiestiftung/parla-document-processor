@@ -53,6 +53,14 @@ export function getFileSize(file: string): number {
 	return fileSizeInBytes;
 }
 
+export function splitArrayEqually<T>(array: T[], chunkSize: number): T[][] {
+	const result: T[][] = [];
+	for (let i = 0; i < array.length; i += chunkSize) {
+		result.push(array.slice(i, i + chunkSize));
+	}
+	return result;
+}
+
 export function splitInParts(input: string, numParts: number): string[] {
 	const parts: string[] = [];
 	const partSize: number = Math.ceil(input.length / numParts);
@@ -76,4 +84,17 @@ export function splitInChunksAccordingToTokenLimit(
 	} else {
 		return splitInChunksAccordingToTokenLimit(input, tokenLimit, numParts * 2);
 	}
+}
+
+export function clearDirectory(path: string) {
+	const files = fs.readdirSync(path);
+	files.forEach((file) => {
+		const fullPath = `${path}/${file}`;
+		const stats = fs.statSync(fullPath);
+		if (stats.isDirectory()) {
+			fs.rmdirSync(fullPath, { recursive: true });
+		} else {
+			fs.rmSync(fullPath);
+		}
+	});
 }

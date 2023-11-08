@@ -4,4 +4,5 @@ export interface Settings {
 	supabaseAnonKey: string;
 	openaAiApiKey: string;
 	maxPagesForSummary: number;
+	processingDirectory: string;
 }
