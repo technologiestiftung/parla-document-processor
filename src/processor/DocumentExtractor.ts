@@ -11,6 +11,11 @@ export interface ExtractContract {
 	targetPath: string;
 }
 
+export interface ExtractedFile {
+	page: number;
+	path: string;
+}
+
 export interface ExtractionResult {
 	document: RegisteredDocument;
 	processedDocument: ProcessedDocument | undefined;
@@ -18,6 +23,7 @@ export interface ExtractionResult {
 	fileSize: number;
 	numPages: number;
 	checksum: string;
+	extractedFiles: Array<ExtractedFile>;
 }
 
 export class DocumentExtractor {
@@ -54,6 +60,7 @@ export class DocumentExtractor {
 			.readdirSync(pagesFolder)
 			.filter((file) => file.endsWith(".pdf"));
 
+		let extractedFiles: Array<ExtractedFile> = [];
 		for (let idx = 0; idx < pdfPageFiles.length; idx++) {
 			const pdfPageFile = pdfPageFiles[idx];
 			const pdfPage = pdfPageFile.replace(".pdf", "").split("-").slice(-1)[0];
@@ -67,8 +74,8 @@ export class DocumentExtractor {
 			// Fallback in case pdf2md fails to extract any text: Convert to Image, use OCR to extract text
 			if (mdText.length < 32) {
 				const image = await pdf2img.convert(`${pagesFolder}/${pdfPageFile}`, {
-					width: 670 * 4,
-					height: 950 * 4,
+					width: 2048,
+					height: 2887,
 				});
 				const pdfImagePage = pdfPageFile.replace(".pdf", ".png");
 				fs.writeFileSync(pdfImagePage, image[0]);
@@ -79,7 +86,13 @@ export class DocumentExtractor {
 
 			let text = mdText.length < 32 ? ocrText : mdText;
 			let outputFile = `${pagesFolder}/${filenameWithoutExtension}-${pdfPage}.md`;
-			fs.writeFileSync(path.resolve(outputFile), text);
+			let outPath = path.resolve(outputFile);
+			fs.writeFileSync(outPath, text);
+
+			extractedFiles.push({
+				page: parseInt(pdfPage),
+				path: outPath,
+			} as ExtractedFile);
 		}
 
 		await worker.terminate();
@@ -91,6 +104,7 @@ export class DocumentExtractor {
 			fileSize: getFileSize(pathToPdf),
 			numPages: pdfPageFiles.length,
 			checksum: getHash(pathToPdf),
+			extractedFiles: extractedFiles,
 		} as ExtractionResult;
 	}
 }

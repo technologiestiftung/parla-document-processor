@@ -12,15 +12,29 @@ import {
 export interface SummarizeResult {
 	document: RegisteredDocument;
 	processedDocument: ProcessedDocument;
+	pagesPath: string;
 	summary: string;
 	embedding: Array<number>;
 	tags: Array<string>;
+	tokenUsage: number;
 }
 
-export interface ProcessingError {
+export interface ProcessingError {}
+
+export class ProcessingError extends Error {
 	document: RegisteredDocument;
 	processedDocument: ProcessedDocument;
 	error: string;
+	constructor(
+		document: RegisteredDocument,
+		processedDocument: ProcessedDocument,
+		error: string,
+	) {
+		super();
+		this.document = document;
+		this.processedDocument = processedDocument;
+		this.error = error;
+	}
 }
 
 export class DocumentSummarizor {
@@ -28,18 +42,18 @@ export class DocumentSummarizor {
 		extractionResult: ExtractionResult,
 		openAi: OpenAIApi,
 		settings: Settings,
-	): Promise<SummarizeResult | ProcessingError> {
+	): Promise<SummarizeResult> {
 		const markdownFiles = fs
 			.readdirSync(extractionResult.pagesPath)
 			.filter((file) => file.endsWith(".md"))
 			.sort();
 
 		if (markdownFiles.length > settings.maxPagesForSummary) {
-			return {
-				document: extractionResult.document,
-				processedDocument: extractionResult.processedDocument,
-				error: `SummarizeError: Document has ${markdownFiles.length} pages, summary is only available for <= ${settings.maxPagesForSummary} pages.`,
-			} as ProcessingError;
+			throw new ProcessingError(
+				extractionResult.document,
+				extractionResult.processedDocument!,
+				`SummarizeError: Document has ${markdownFiles.length} pages, summary is only available for <= ${settings.maxPagesForSummary} pages.`,
+			);
 		}
 
 		// Generate page summaries
@@ -53,26 +67,41 @@ export class DocumentSummarizor {
 				return summaryResponse;
 			}),
 		);
-		const combinedPageSummaries = pageSummaries.join("\n");
+		const combinedPageSummariesTokenUsage = pageSummaries
+			.map((x) => x.tokenUsage)
+			.reduce((total, num) => total + num, 0);
+		const combinedPageSummaries = pageSummaries.map((x) => x.result).join("\n");
 
 		// Generate final summary
-		const finalSummary = await generateSummary(combinedPageSummaries, openAi);
+		const finalSummaryResponse = await generateSummary(
+			combinedPageSummaries,
+			openAi,
+		);
 
 		// Generate embedding
-		const embedding = await generateEmbedding(finalSummary, openAi);
+		const embeddingResponse = await generateEmbedding(
+			finalSummaryResponse.result,
+			openAi,
+		);
 
 		// Generate tags
-		const tags = await generateTags(combinedPageSummaries, openAi);
+		const tagsResponse = await generateTags(combinedPageSummaries, openAi);
+
+		const totalTokenUsage =
+			combinedPageSummariesTokenUsage +
+			finalSummaryResponse.tokenUsage +
+			embeddingResponse.tokenUsage +
+			tagsResponse.tokenUsage;
 
 		const summaryResponse = {
 			document: extractionResult.document,
 			processedDocument: extractionResult.processedDocument!,
-			summary: finalSummary,
-			embedding: embedding,
-			tags: tags,
+			summary: finalSummaryResponse.result,
+			embedding: embeddingResponse.embedding,
+			tags: tagsResponse.tags,
+			pagesPath: extractionResult.pagesPath,
+			tokenUsage: totalTokenUsage,
 		};
-
-		console.log(`Summarized ${extractionResult.pagesPath}...`);
 
 		return summaryResponse;
 	}

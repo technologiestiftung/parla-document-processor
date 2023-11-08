@@ -16,8 +16,15 @@ const processor = new DocumentsProcessor(settings);
 
 const unprocessedDocuments = await processor.find();
 
-const extractionResults = await processor.extract(unprocessedDocuments);
+const testBatch = unprocessedDocuments.slice(0, 1);
 
-const test = await processor.summarize(extractionResults);
+for (let idx = 0; idx < testBatch.length; idx++) {
+	const document = testBatch[idx];
+	console.log(`Processing ${document.source_url}`);
+
+	const extractionResult = await processor.extract(document);
+	const summarizeResult = await processor.summarize(extractionResult);
+	const embeddingResult = await processor.embedd(extractionResult);
+}
 
 process.exit(0);

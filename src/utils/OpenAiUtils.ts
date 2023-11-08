@@ -1,10 +1,25 @@
 import { OpenAIApi } from "openai";
 import { backOff } from "exponential-backoff";
 
+export interface OpenAITextResponse {
+	result: string;
+	tokenUsage: number;
+}
+
+export interface OpenAIEmbeddingResponse {
+	embedding: Array<number>;
+	tokenUsage: number;
+}
+
+export interface OpenAITagsResponse {
+	tags: Array<string>;
+	tokenUsage: number;
+}
+
 export async function generateEmbedding(
 	content: string,
 	openAi: OpenAIApi,
-): Promise<Array<number>> {
+): Promise<OpenAIEmbeddingResponse> {
 	const embeddingResponse = await backOff(
 		async () =>
 			await openAi.createEmbedding({
@@ -19,13 +34,16 @@ export async function generateEmbedding(
 		},
 	);
 	const [responseData] = embeddingResponse.data.data;
-	return responseData.embedding;
+	return {
+		embedding: responseData.embedding,
+		tokenUsage: embeddingResponse.data.usage.total_tokens,
+	};
 }
 
 export async function generateTags(
 	content: string,
 	openAi: OpenAIApi,
-): Promise<Array<string>> {
+): Promise<OpenAITagsResponse> {
 	const tagSummary = await backOff(
 		async () =>
 			await openAi.createChatCompletion({
@@ -52,13 +70,16 @@ export async function generateTags(
 		},
 	);
 	const tags = JSON.parse(tagSummary.data.choices[0].message?.content ?? "");
-	return tags;
+	return {
+		tags: tags,
+		tokenUsage: tagSummary.data.usage?.total_tokens ?? 0,
+	};
 }
 
 export async function generateSummary(
 	content: string,
 	openAi: OpenAIApi,
-): Promise<string> {
+): Promise<OpenAITextResponse> {
 	const completeSummary = await backOff(
 		async () =>
 			await openAi.createChatCompletion({
@@ -84,5 +105,9 @@ export async function generateSummary(
 			},
 		},
 	);
-	return completeSummary.data.choices[0].message?.content ?? "";
+
+	return {
+		result: completeSummary.data.choices[0].message?.content ?? "",
+		tokenUsage: completeSummary.data.usage?.total_tokens ?? 0,
+	};
 }

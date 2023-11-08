@@ -1,6 +1,9 @@
 import crypto from "crypto";
 import fs from "fs";
 import { PDFDocument } from "pdf-lib";
+import { get_encoding } from "@dqbd/tiktoken";
+
+export const enc = get_encoding("cl100k_base");
 
 /**
  * This function checks if the provided value is an array.
@@ -48,4 +51,29 @@ export function getFileSize(file: string): number {
 	const stats = fs.statSync(file);
 	const fileSizeInBytes = stats.size;
 	return fileSizeInBytes;
+}
+
+export function splitInParts(input: string, numParts: number): string[] {
+	const parts: string[] = [];
+	const partSize: number = Math.ceil(input.length / numParts);
+	for (let i = 0; i < input.length; i += partSize) {
+		parts.push(input.substring(i, i + partSize));
+	}
+	return parts;
+}
+
+export function splitInChunksAccordingToTokenLimit(
+	input: string,
+	tokenLimit: number,
+	numParts: number = 1,
+): string[] {
+	const splittedParts = splitInParts(input, numParts);
+	const tokenLimitRespected = splittedParts.every(
+		(p) => enc.encode(p).length < tokenLimit,
+	);
+	if (tokenLimitRespected) {
+		return splittedParts;
+	} else {
+		return splitInChunksAccordingToTokenLimit(input, tokenLimit, numParts * 2);
+	}
 }

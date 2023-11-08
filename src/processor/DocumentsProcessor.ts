@@ -1,4 +1,5 @@
 import { SupabaseClient, createClient } from "@supabase/supabase-js";
+import { Configuration, OpenAIApi } from "openai";
 import postgres from "postgres";
 import { Database } from "../db/db_schema.js";
 import { Settings } from "../interfaces/Settings.js";
@@ -12,7 +13,7 @@ import {
 	ProcessingError,
 	SummarizeResult,
 } from "./DocumentSummarizor.js";
-import { Configuration, OpenAIApi } from "openai";
+import { DocumentEmbeddor, EmbeddingResult } from "./DocumentEmbeddor.js";
 
 export type RegisteredDocument =
 	Database["public"]["Tables"]["registered_documents"]["Row"];
@@ -80,82 +81,83 @@ export class DocumentsProcessor {
 		});
 	}
 
-	async extract(
-		documents: Array<RegisteredDocument>,
-	): Promise<Array<ExtractionResult>> {
-		const testLoad = documents.slice(0, 5);
-		console.log(`Extracting ${testLoad.length} documents...`);
+	async extract(document: RegisteredDocument): Promise<ExtractionResult> {
+		const extractionResult = await DocumentExtractor.extract({
+			document: document,
+			targetPath: "./processing_data",
+		} as ExtractContract);
 
-		const extractionResults = await Promise.all(
-			testLoad.map(
-				async (d) =>
-					await DocumentExtractor.extract({
-						document: d,
-						targetPath: "./processing_data",
-					} as ExtractContract),
-			),
-		);
+		const { data } = await this.supabase
+			.from("processed_documents")
+			.insert({
+				file_checksum: extractionResult.checksum,
+				file_size: extractionResult.fileSize,
+				num_pages: extractionResult.numPages,
+				processing_started_at: new Date(),
+				registered_document_id: extractionResult.document.id,
+			})
+			.select("*");
 
-		const insertedProcessedDocuments = await Promise.all(
-			extractionResults.map(async (r) => {
-				const { data } = await this.supabase
+		return { ...extractionResult, processedDocument: data![0] };
+	}
+
+	async summarize(
+		extractionResult: ExtractionResult,
+	): Promise<SummarizeResult> {
+		try {
+			const summary = await DocumentSummarizor.summarize(
+				extractionResult,
+				this.openAi,
+				this.settings,
+			);
+			const { data, error } = await this.supabase
+				.from("processed_document_summaries")
+				.insert({
+					summary: summary.summary,
+					summary_embedding: summary.embedding,
+					tags: summary.tags,
+					processed_document_id: summary.processedDocument.id,
+				});
+			return summary;
+		} catch (e) {
+			if (e instanceof ProcessingError) {
+				const { data, error } = await this.supabase
 					.from("processed_documents")
-					.insert({
-						file_checksum: r.checksum,
-						file_size: r.fileSize,
-						num_pages: r.numPages,
-						processing_started_at: new Date(),
-						registered_document_id: r.document.id,
+					.update({
+						processing_finished_at: new Date(),
+						processing_error: e.error,
 					})
-					.select("*");
+					.eq("id", e.processedDocument.id);
 
-				return { ...r, processedDocument: data![0] };
-			}),
-		);
-
-		return insertedProcessedDocuments;
+				throw e;
+			} else {
+				console.log(e);
+				process.exit(1);
+			}
+		}
 	}
 
-	async summarize(extractionResults: Array<ExtractionResult>) {
-		console.log(`Summarizing ${extractionResults.length} documents...`);
-		const summaries = await Promise.all(
-			extractionResults.map(async (r) => {
-				const summary = await DocumentSummarizor.summarize(
-					r,
-					this.openAi,
-					this.settings,
-				);
-				return summary;
-			}),
+	async embedd(extractionResult: ExtractionResult): Promise<EmbeddingResult> {
+		const embeddingResult = await DocumentEmbeddor.embedd(
+			extractionResult,
+			this.openAi,
+			this.settings,
 		);
-		await Promise.all(
-			summaries
-				.filter((s) => s !== undefined)
-				.map(async (s) => {
-					const summaryError = s as ProcessingError;
-					const summaryResult = s as SummarizeResult;
-					if (summaryError.error) {
-						const { data, error } = await this.supabase
-							.from("processed_documents")
-							.update({
-								processing_finished_at: new Date(),
-								processing_error: (s as ProcessingError).error,
-							})
-							.eq("id", summaryError.processedDocument.id);
-					} else {
-						const { data, error } = await this.supabase
-							.from("processed_document_summaries")
-							.insert({
-								summary: summaryResult.summary,
-								summary_embedding: summaryResult.embedding,
-								tags: summaryResult.tags,
-								processed_document_id: summaryResult.processedDocument.id,
-							});
-					}
+
+		const { data, error } = await this.supabase
+			.from("processed_document_chunks")
+			.insert(
+				embeddingResult.embeddings.map((e) => {
+					return {
+						content: e.content,
+						embedding: e.embedding,
+						page: e.page,
+						chunk_index: e.chunkIndex,
+						processed_document_id: embeddingResult.processedDocument.id,
+					};
 				}),
-		);
-	}
-	static async embedd() {
-		throw new Error("Method not implemented.");
+			);
+
+		return embeddingResult;
 	}
 }
