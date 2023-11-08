@@ -1,0 +1,22 @@
+name: Process documents
+
+on:
+  workflow_dispatch: {}
+  repository_dispatch:
+    types: [process_documents]
+
+jobs:
+  process_documents:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_DB_CONNECTION: ${{ secrets.SUPABASE_DB_CONNECTION }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v2
+      - name: preparation
+        run: npm ci && mkdir -p processing_data
+      - name: register documents
+        run: export PROCESSING_DIR=$(pwd)/processing_data && npx tsx ./src/run_import.ts
