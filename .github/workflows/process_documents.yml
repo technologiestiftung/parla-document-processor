@@ -9,7 +9,7 @@ jobs:
   process_documents:
     runs-on: ubuntu-latest
     env:
-      SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
       SUPABASE_DB_CONNECTION: ${{ secrets.SUPABASE_DB_CONNECTION }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
