@@ -46,7 +46,9 @@ export class DocumentExtractor {
 		const filenameWithoutExtension = filename.replace(".pdf", "");
 
 		const subfolder = `${extractRequest.targetPath}/${filenameWithoutExtension}`;
-		fs.mkdirSync(subfolder);
+		if (!fs.existsSync(subfolder)) {
+			fs.mkdirSync(subfolder);
+		}
 
 		const pathToPdf = `${subfolder}/${filename}`;
 
@@ -58,7 +60,9 @@ export class DocumentExtractor {
 		}).download();
 
 		const pagesFolder = `${subfolder}/pages`;
-		fs.mkdirSync(pagesFolder);
+		if (!fs.existsSync(pagesFolder)) {
+			fs.mkdirSync(pagesFolder);
+		}
 
 		let dataBuffer = fs.readFileSync(pathToPdf);
 		const pdfStat = await pdf(dataBuffer);
