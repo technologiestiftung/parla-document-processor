@@ -74,19 +74,6 @@ export async function generateTags(
 	};
 }
 
-export async function generateSummaryMock(
-	content: string,
-	openAi: OpenAIApi,
-): Promise<OpenAITextResponse> {
-	const mockedResponse =
-		"Der Senat von Berlin beantwortet die schriftliche Anfrage des Abgeordneten Tommy Tabor (AfD) zum Thema des Marathons am Wahlsonntag. Der Senat hat keine Informationen über den Eintrag des Veranstalters des Berlin-Marathons in das EMAS-Register und kann keine Aussage über die übliche Dauer einer EMAS-Registrierung machen. Die Zusammenarbeit mit dem Veranstalter wird als vorbildlich angesehen, aber eine Vorreiterrolle bei der EMAS-Registrierung kann nicht beurteilt werden. Es liegen keine Informationen über das Recyclingunternehmen vor, mit dem der Veranstalter zusammenarbeitet. Der Veranstalter ist bereit, die Fragen zur Müllvermeidung und zum ökologischen Fußabdruck im direkten Gespräch zu beantworten.";
-	return {
-		result: mockedResponse,
-		inputTokens: enc.encode(content).length,
-		outputTokens: enc.encode(mockedResponse).length,
-	};
-}
-
 export async function generateSummary(
 	content: string,
 	openAi: OpenAIApi,
@@ -129,23 +116,27 @@ export async function generateSummaryForLargeDocument(
 	openAi: OpenAIApi,
 	allSummaries: Array<OpenAITextResponse> = [],
 ): Promise<OpenAITextResponse> {
+	// Split in chunks where each token count of chunk < MAX_TOKEN_COUNT_FOR_SUMMARY
 	const maxTokenChunks = splitInChunksAccordingToTokenLimit(
 		completeDocument,
 		MAX_TOKEN_COUNT_FOR_SUMMARY,
 	);
+
+	// Generate summaries in batches (to avoid 429)
 	let batches = splitArrayEqually(maxTokenChunks, 20);
 	var summaries: Array<OpenAITextResponse> = [];
 	for (let idx = 0; idx < batches.length; idx++) {
 		const batch = batches[idx];
 		const sx = await Promise.all(
 			batch.map(async (chunk) => {
-				const summary = await generateSummaryMock(chunk, openAi);
+				const summary = await generateSummary(chunk, openAi);
 				return summary;
 			}),
 		);
 		summaries = summaries.concat(sx);
 	}
 
+	// Concatenate the summaries
 	const totalSummary = summaries.map((s) => s.result).join("\n");
 	const totalSummaryTokens = enc.encode(totalSummary).length;
 
@@ -161,9 +152,10 @@ export async function generateSummaryForLargeDocument(
 			allSummaries.concat(summaries),
 		);
 	} else {
-		const finalSummary = await generateSummaryMock(totalSummary, openAi);
+		// Generate final summary
+		const finalSummary = await generateSummary(totalSummary, openAi);
 		console.log(
-			`Generated 1 final summary with totalTokenCount=${finalSummary.outputTokens}...`,
+			`Generated final summary with totalTokenCount=${finalSummary.outputTokens}...`,
 		);
 		return {
 			result: finalSummary.result,

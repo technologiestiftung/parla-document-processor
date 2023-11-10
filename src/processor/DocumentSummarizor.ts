@@ -1,23 +1,19 @@
 import fs from "fs";
 import { OpenAIApi } from "openai";
 import {
+	ExtractionResult,
+	OpenAITextResponse,
+	ProcessedDocument,
+	RegisteredDocument,
+	SummarizeResult,
+} from "../interfaces/Common.js";
+import {
 	generateEmbedding,
 	generateSummary,
 	generateSummaryForLargeDocument,
 	generateTags,
 } from "../utils/OpenAiUtils.js";
-import {
-	enc,
-	splitArrayEqually,
-	splitInChunksAccordingToTokenLimit,
-} from "../utils/utils.js";
-import {
-	RegisteredDocument,
-	ProcessedDocument,
-	ExtractionResult,
-	SummarizeResult,
-	OpenAITextResponse,
-} from "../interfaces/Common.js";
+import { enc } from "../utils/utils.js";
 
 // We use a model with 16k context size, we reserve 1k for the prompt so that we can send ~15k tokens as payload
 export const MAX_TOKEN_COUNT_FOR_SUMMARY = 15000;

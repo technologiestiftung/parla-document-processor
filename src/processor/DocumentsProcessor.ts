@@ -13,6 +13,7 @@ import {
 import { DocumentEmbeddor } from "./DocumentEmbeddor.js";
 import { DocumentExtractor } from "./DocumentExtractor.js";
 import { DocumentSummarizor } from "./DocumentSummarizor.js";
+import { DocumentFinder } from "./DocumentFinder.js";
 
 export class DocumentsProcessor {
 	settings: Settings;
@@ -35,53 +36,18 @@ export class DocumentsProcessor {
 	}
 
 	async find(): Promise<Array<RegisteredDocument>> {
-		const { data, error } = await this.supabase
-			.from("registered_documents")
-			.select(
-				"id, source_url, source_type, registered_at, metadata, processed_documents(*)",
-			);
-
-		const unprocessedDocuments = (data ?? []).filter((d) => {
-			const unprocessed = d.processed_documents.length === 0;
-
-			const processedButUnsuccessful =
-				d.processed_documents.filter(
-					(pd: ProcessedDocument) =>
-						(pd.processing_started_at && !pd.processing_finished_at) ||
-						!pd.processing_started_at,
-				).length > 0;
-
-			return unprocessed || processedButUnsuccessful;
-		});
-
-		const processedDocumentsToCleanup = unprocessedDocuments.flatMap(
-			(d) => d.processed_documents,
-		);
-
-		console.log(`found ${unprocessedDocuments.length} unprocessed documents`);
-		console.log(
-			`cleanup ${processedDocumentsToCleanup.length} processed documents`,
-		);
-
-		await Promise.all(
-			processedDocumentsToCleanup.map(async (p) => {
-				await this.supabase.from("processed_documents").delete().eq("id", p.id);
-			}),
-		);
-
-		return unprocessedDocuments.map((d) => {
-			const document: any = { ...d };
-			delete document.processed_documents;
-			const registeredDocument: RegisteredDocument = { ...document };
-			return registeredDocument;
-		});
+		const documents = await DocumentFinder.find(this.supabase, this.settings);
+		return documents;
 	}
 
 	async extract(document: RegisteredDocument): Promise<ExtractionResult> {
-		const extractionResult = await DocumentExtractor.extract({
-			document: document,
-			targetPath: this.settings.processingDirectory,
-		} as ExtractRequest);
+		const extractionResult = await DocumentExtractor.extract(
+			{
+				document: document,
+				targetPath: this.settings.processingDirectory,
+			} as ExtractRequest,
+			this.settings,
+		);
 
 		const { data } = await this.supabase
 			.from("processed_documents")

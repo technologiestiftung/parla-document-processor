@@ -1,4 +1,4 @@
-import { Settings } from "./interfaces/Common.js";
+import { settings } from "./Settings.js";
 import { DocumentsProcessor } from "./processor/DocumentsProcessor.js";
 import {
 	clearDirectory,
@@ -10,14 +10,6 @@ import fs from "fs";
 
 const BATCH_SIZE = 20;
 
-const settings = {
-	postgresConnection: process.env.SUPABASE_DB_CONNECTION!,
-	supabaseUrl: process.env.SUPABASE_URL!,
-	supabaseAnonKey: process.env.SUPABASE_ANON_KEY!,
-	openaAiApiKey: process.env.OPENAI_API_KEY!,
-	processingDirectory: process.env.PROCESSING_DIR!,
-} as Settings;
-
 const processor = new DocumentsProcessor(settings);
 
 const unprocessedDocuments = await processor.find();
@@ -25,7 +17,7 @@ const unprocessedDocuments = await processor.find();
 // process.exit(0);
 const batches = splitArrayEqually(
 	unprocessedDocuments
-		.filter((d) => d.source_url.includes("h19-0200-Anlage-v.pdf"))
+		.filter((d) => d.source_url.includes("h19-0570-v.pdf"))
 		.slice(0, 1), //TODO: remove
 	BATCH_SIZE,
 );
@@ -41,29 +33,22 @@ for (let idx = 0; idx < batches.length; idx++) {
 		documentBatch.map(async (document) => {
 			console.log(`Processing ${document.source_url} in batch ${idx}...`);
 			try {
-				// const extractionResult = await processor.extract(document);
-				// let outputFile = `extractionResult.json`;
-				// fs.writeFileSync(outputFile, JSON.stringify(extractionResult));
-				const extractionResultStr = fs.readFileSync(
-					"extractionResult.json",
-					"utf-8",
-				);
-				const extractionResult = JSON.parse(extractionResultStr);
+				const extractionResult = await processor.extract(document);
 
 				try {
 					const summarizeResult = await processor.summarize(extractionResult);
-					// const embeddingResult = await processor.embedd(extractionResult);
-					// await processor.finish(extractionResult.processedDocument!);
+					const embeddingResult = await processor.embedd(extractionResult);
+					await processor.finish(extractionResult.processedDocument!);
 
-					// const tokens = sumTokens(summarizeResult, embeddingResult);
+					const tokens = sumTokens(summarizeResult, embeddingResult);
 
-					// embeddingTokenCount += tokens.embeddings;
-					// inputTokenCount += tokens.inputs;
-					// outputTokenCount += tokens.outputs;
+					embeddingTokenCount += tokens.embeddings;
+					inputTokenCount += tokens.inputs;
+					outputTokenCount += tokens.outputs;
 
-					// console.log(
-					// 	`Finished processing ${document.source_url} in batch ${idx} with inputTokens=${tokens.inputs} and outputTokens = ${tokens.outputs} and embeddingTokens = ${tokens.embeddings}`,
-					// );
+					console.log(
+						`Finished processing ${document.source_url} in batch ${idx} with inputTokens=${tokens.inputs} and outputTokens = ${tokens.outputs} and embeddingTokens = ${tokens.embeddings}`,
+					);
 				} catch (e) {
 					await handleError(
 						e,
@@ -77,7 +62,7 @@ for (let idx = 0; idx < batches.length; idx++) {
 			}
 		}),
 	);
-	// clearDirectory(settings.processingDirectory);
+	clearDirectory(settings.processingDirectory);
 }
 
 // OpenAI pricing

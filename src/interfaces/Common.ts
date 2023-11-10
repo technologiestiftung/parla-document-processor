@@ -82,6 +82,8 @@ export interface Settings {
 	supabaseAnonKey: string;
 	openaAiApiKey: string;
 	processingDirectory: string;
+	allowDeletion: boolean;
+	maxPagesLimit: number;
 }
 
 export interface TokenUsage {
