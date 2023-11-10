@@ -43,16 +43,16 @@ export async function generateTags(
 	const tagSummary = await backOff(
 		async () =>
 			await openAi.createChatCompletion({
-				model: "gpt-3.5-turbo-16k",
+				model: "gpt-3.5-turbo-1106",
 				messages: [
 					{
 						role: "system",
 						content:
-							"Du bist ein System, das in der Lage ist Text in inhaltlich relevante Schlagwörter / Tags zusammenzufassen. Generiere niemals mehr als 10 Tags.",
+							"Du bist ein System, das in der Lage ist Text in inhaltlich relevante Schlagwörter / Tags zusammenzufassen. Generiere niemals mehr als 10 Tags. Es ist EXTREM WICHTIG, dass IMMER ein gültiges JSON Array zurückgegeben wird.",
 					},
 					{
 						role: "user",
-						content: `Extrahiere eine Liste von inhaltlich relevanten Tags aus dem folgenden Text. Generiere nicht mehr als 10 Tags. Gebe die Tags formatiert als JSON Liste zurück: "${content}"`,
+						content: `Extrahiere eine Liste von inhaltlich relevanten Tags aus dem folgenden Text. Generiere nicht mehr als 10 Tags. Gebe die Tags IMMER formatiert als syntaktisch gültiges JSON Array zurück. Es ist EXTREM WICHTIG, dass IMMER ein gültiges JSON Array zurückgegeben wird. Hier ist der Text: "${content}"`,
 					},
 				],
 				temperature: 0,
@@ -65,6 +65,7 @@ export async function generateTags(
 			},
 		},
 	);
+
 	const tags = JSON.parse(tagSummary.data.choices[0].message?.content ?? "");
 
 	return {
@@ -81,7 +82,7 @@ export async function generateSummary(
 	const completeSummary = await backOff(
 		async () =>
 			await openAi.createChatCompletion({
-				model: "gpt-3.5-turbo-16k",
+				model: "gpt-3.5-turbo-1106",
 				messages: [
 					{
 						role: "system",
@@ -141,30 +142,37 @@ export async function generateSummaryForLargeDocument(
 	const totalSummaryTokens = enc.encode(totalSummary).length;
 
 	console.log(
-		`Generated ${summaries.length} individual summaries with totalTokenCount=${totalSummaryTokens}...`,
+		`Generated ${
+			summaries.length
+		} individual summaries with input tokens=[${summaries.map(
+			(s) => s.inputTokens,
+		)}], output tokens=[${summaries.map((s) => s.outputTokens)}]...`,
 	);
+
+	const combinedSummaries = allSummaries.concat(summaries);
 
 	if (totalSummaryTokens > MAX_TOKEN_COUNT_FOR_SUMMARY) {
 		// Recursively start again with new summary as document
 		return generateSummaryForLargeDocument(
 			totalSummary,
 			openAi,
-			allSummaries.concat(summaries),
+			combinedSummaries,
 		);
 	} else {
 		// Generate final summary
 		const finalSummary = await generateSummary(totalSummary, openAi);
 		console.log(
-			`Generated final summary with totalTokenCount=${finalSummary.outputTokens}...`,
+			`Generated final summary with input tokens=${finalSummary.inputTokens} and output tokens=${finalSummary.outputTokens}...`,
 		);
 		return {
 			result: finalSummary.result,
 			inputTokens:
-				allSummaries.map((s) => s.inputTokens).reduce((l, r) => l + r, 0) +
+				combinedSummaries.map((s) => s.inputTokens).reduce((l, r) => l + r, 0) +
 				finalSummary.inputTokens,
 			outputTokens:
-				allSummaries.map((s) => s.outputTokens).reduce((l, r) => l + r, 0) +
-				finalSummary.outputTokens,
+				combinedSummaries
+					.map((s) => s.outputTokens)
+					.reduce((l, r) => l + r, 0) + finalSummary.outputTokens,
 		};
 	}
 }

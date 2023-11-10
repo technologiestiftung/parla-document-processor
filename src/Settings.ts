@@ -7,4 +7,5 @@ export const settings = {
 	processingDirectory: process.env.PROCESSING_DIR!,
 	allowDeletion: process.env.ALLOW_DELETION! === "true",
 	maxPagesLimit: parseInt(process.env.MAX_PAGES_LIMIT!),
+	openAiModel: process.env.OPENAI_MODEL!,
 } as Settings;

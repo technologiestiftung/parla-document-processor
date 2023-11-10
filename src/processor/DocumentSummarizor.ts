@@ -57,11 +57,17 @@ export class DocumentSummarizor {
 		const completeMarkdown = markdownTexts.join("\n");
 
 		// Generate summary
-		const tokens = enc.encode(completeMarkdown).length;
+		const numTokens = enc.encode(completeMarkdown).length;
 		let summary: OpenAITextResponse | undefined = undefined;
-		if (tokens > MAX_TOKEN_COUNT_FOR_SUMMARY) {
+		if (numTokens > MAX_TOKEN_COUNT_FOR_SUMMARY) {
+			console.log(
+				`Number of tokens (${numTokens}) of document ${extractionResult.document.source_url} exceeds max. context size (${MAX_TOKEN_COUNT_FOR_SUMMARY}). Recursively generating summary...`,
+			);
 			summary = await generateSummaryForLargeDocument(completeMarkdown, openAi);
 		} else {
+			console.log(
+				`Number of tokens (${numTokens}) of document ${extractionResult.document.source_url} is less than max. context size (${MAX_TOKEN_COUNT_FOR_SUMMARY}). Generating summary in one run...`,
+			);
 			summary = await generateSummary(completeMarkdown, openAi);
 		}
 

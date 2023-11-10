@@ -128,12 +128,14 @@ export async function handleError(
 ) {
 	if (e instanceof ProcessingError) {
 		await processor.finishWithError(e.processedDocument, e.error);
-		console.log(`Error processing ${processedDocument?.id}: ${e.error}`);
+		console.log(
+			`Error processing ${e.document.id} / ${e.document.source_url}: ${e.error}`,
+		);
 	} else if (e instanceof ExtractError) {
 		console.log(
-			`Error extracting document ${document?.id}: ${JSON.stringify(e)}`,
+			`Error extracting document ${document?.id} / ${e.document.source_url}: ${e.error}`,
 		);
 	} else {
-		console.log(`Error: ${JSON.stringify(e)}`);
+		console.log(`Error: ${JSON.stringify(e)} ${e}`);
 	}
 }

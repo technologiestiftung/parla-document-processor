@@ -3,7 +3,7 @@ import Downloader from "nodejs-file-downloader";
 import path from "path";
 import pdf2img from "pdf-img-convert";
 import { createWorker } from "tesseract.js";
-import { getFileSize, getHash, splitPdf } from "../utils/utils.js";
+import { enc, getFileSize, getHash, splitPdf } from "../utils/utils.js";
 import {
 	ExtractRequest,
 	ExtractedFile,
@@ -66,7 +66,7 @@ export class DocumentExtractor {
 		if (numPages > settings.maxPagesLimit) {
 			throw new ExtractError(
 				extractRequest.document,
-				`Could not extract ${extractRequest.document.source_url}, num pages ${numPages} > limit of ${settings.MAGIC_PAGES_LIMIT} pages.`,
+				`Could not extract ${extractRequest.document.source_url}, num pages ${numPages} > limit of ${settings.maxPagesLimit} pages.`,
 			);
 		}
 
@@ -108,6 +108,7 @@ export class DocumentExtractor {
 			extractedFiles.push({
 				page: parseInt(pdfPage),
 				path: outPath,
+				tokens: enc.encode(text).length,
 			} as ExtractedFile);
 		}
 
@@ -121,6 +122,9 @@ export class DocumentExtractor {
 			numPages: pdfPageFiles.length,
 			checksum: getHash(pathToPdf),
 			extractedFiles: extractedFiles,
+			totalTokens: extractedFiles
+				.map((f) => f.tokens)
+				.reduce((l, r) => l + r, 0),
 		} as ExtractionResult;
 	}
 }

@@ -6,7 +6,6 @@ import {
 	splitArrayEqually,
 	sumTokens,
 } from "./utils/utils.js";
-import fs from "fs";
 
 const BATCH_SIZE = 20;
 
@@ -14,12 +13,12 @@ const processor = new DocumentsProcessor(settings);
 
 const unprocessedDocuments = await processor.find();
 
-// process.exit(0);
-const batches = splitArrayEqually(
-	unprocessedDocuments
-		.filter((d) => d.source_url.includes("h19-0570-v.pdf"))
-		.slice(0, 1), //TODO: remove
-	BATCH_SIZE,
+const documentsToProcess = unprocessedDocuments.slice(0, 100); //TODO: remove
+
+const batches = splitArrayEqually(documentsToProcess, BATCH_SIZE);
+
+console.log(
+	`Processing ${documentsToProcess.length} documents in ${batches.length} batches of size ${BATCH_SIZE}...`,
 );
 
 let embeddingTokenCount = 0;
