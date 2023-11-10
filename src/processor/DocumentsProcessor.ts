@@ -47,9 +47,6 @@ export class DocumentsProcessor {
 			const processedButUnsuccessful =
 				d.processed_documents.filter(
 					(pd: ProcessedDocument) =>
-						(pd.processing_started_at &&
-							pd.processing_finished_at &&
-							pd.processing_error) ||
 						(pd.processing_started_at && !pd.processing_finished_at) ||
 						!pd.processing_started_at,
 				).length > 0;

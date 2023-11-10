@@ -92,7 +92,7 @@ export function splitInChunksAccordingToTokenLimit(
 	if (tokenLimitRespected) {
 		return splittedParts;
 	} else {
-		return splitInChunksAccordingToTokenLimit(input, tokenLimit, numParts * 2);
+		return splitInChunksAccordingToTokenLimit(input, tokenLimit, numParts + 1);
 	}
 }
 

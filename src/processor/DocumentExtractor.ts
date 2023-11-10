@@ -59,15 +59,15 @@ export class DocumentExtractor {
 		const pagesFolder = `${subfolder}/pages`;
 		fs.mkdirSync(pagesFolder);
 
-		let dataBuffer = fs.readFileSync(pathToPdf);
-		const pdfStat = await pdf(dataBuffer);
-		const numPages = pdfStat.numpages;
-		if (numPages > MAGIC_PAGES_LIMIT) {
-			throw new ExtractError(
-				extractRequest.document,
-				`Could not extract ${extractRequest.document.source_url}, num pages ${numPages} > limit of ${MAGIC_PAGES_LIMIT} pages.`,
-			);
-		}
+		// let dataBuffer = fs.readFileSync(pathToPdf);
+		// const pdfStat = await pdf(dataBuffer);
+		// const numPages = pdfStat.numpages;
+		// if (numPages > MAGIC_PAGES_LIMIT) {
+		// 	throw new ExtractError(
+		// 		extractRequest.document,
+		// 		`Could not extract ${extractRequest.document.source_url}, num pages ${numPages} > limit of ${MAGIC_PAGES_LIMIT} pages.`,
+		// 	);
+		// }
 
 		await splitPdf(pathToPdf, filename, pagesFolder);
 
