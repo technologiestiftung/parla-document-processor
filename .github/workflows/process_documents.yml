@@ -13,6 +13,13 @@ jobs:
       SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
       SUPABASE_DB_CONNECTION: ${{ secrets.SUPABASE_DB_CONNECTION }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
+      OPENAI_EMBEDDING_MODEL: ${{ vars.OPENAI_EMBEDDING_MODEL }}
+      PROCESSING_DIR: ${{ vars.PROCESSING_DIR }}
+      ALLOW_DELETION: ${{ vars.ALLOW_DELETION }}
+      MAX_PAGES_LIMIT: ${{ vars.MAX_PAGES_LIMIT }}
+      MAX_DOCUMENTS_TO_PROCESS: ${{ vars.MAX_DOCUMENTS_TO_PROCESS }}
+
     steps:
       - name: checkout code
         uses: actions/checkout@v2

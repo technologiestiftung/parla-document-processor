@@ -15,7 +15,7 @@ const unprocessedDocuments = await processor.find();
 
 const documentsToProcess = unprocessedDocuments.slice(
 	0,
-	settings.maxPagesLimit,
+	settings.maxDocumentsToProcess,
 );
 
 const batches = splitArrayEqually(documentsToProcess, BATCH_SIZE);
