@@ -88,6 +88,7 @@ export interface Settings {
 	maxPagesLimit: number;
 	openAiModel: string;
 	openAiEmbeddingModel: string;
+	maxDocumentsToProcess: number;
 }
 
 export interface TokenUsage {

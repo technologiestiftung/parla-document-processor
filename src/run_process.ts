@@ -13,7 +13,10 @@ const processor = new DocumentsProcessor(settings);
 
 const unprocessedDocuments = await processor.find();
 
-const documentsToProcess = unprocessedDocuments.slice(0, 100); //TODO: remove
+const documentsToProcess = unprocessedDocuments.slice(
+	0,
+	settings.maxPagesLimit,
+);
 
 const batches = splitArrayEqually(documentsToProcess, BATCH_SIZE);
 
