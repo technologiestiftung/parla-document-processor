@@ -29,6 +29,7 @@ export interface ExtractRequest {
 export interface ExtractedFile {
 	page: number;
 	path: string;
+	tokens: number;
 }
 
 export interface ExtractionResult {
@@ -39,6 +40,7 @@ export interface ExtractionResult {
 	numPages: number;
 	checksum: string;
 	extractedFiles: Array<ExtractedFile>;
+	totalTokens: number;
 }
 
 export interface SummarizeResult {
@@ -82,6 +84,11 @@ export interface Settings {
 	supabaseAnonKey: string;
 	openaAiApiKey: string;
 	processingDirectory: string;
+	allowDeletion: boolean;
+	maxPagesLimit: number;
+	openAiModel: string;
+	openAiEmbeddingModel: string;
+	maxDocumentsToProcess: number;
 }
 
 export interface TokenUsage {

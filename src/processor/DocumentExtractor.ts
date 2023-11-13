@@ -3,12 +3,13 @@ import Downloader from "nodejs-file-downloader";
 import path from "path";
 import pdf2img from "pdf-img-convert";
 import { createWorker } from "tesseract.js";
-import { getFileSize, getHash, splitPdf } from "../utils/utils.js";
+import { enc, getFileSize, getHash, splitPdf } from "../utils/utils.js";
 import {
 	ExtractRequest,
 	ExtractedFile,
 	ExtractionResult,
 	RegisteredDocument,
+	Settings,
 } from "../interfaces/Common.js";
 // @ts-ignore
 import pdf from "pdf-page-counter";
@@ -17,7 +18,6 @@ const MAGIC_TEXT_TOO_SHORT_LENGTH = 32;
 const MAGIC_OCR_WIDTH = 2048;
 const MAGIC_OCR_HEIGHT = 2887;
 const MAGIC_TIMEOUT = 100000;
-const MAGIC_PAGES_LIMIT = 100;
 
 export class ExtractError extends Error {
 	document: RegisteredDocument;
@@ -32,6 +32,7 @@ export class ExtractError extends Error {
 export class DocumentExtractor {
 	static async extract(
 		extractRequest: ExtractRequest,
+		settings: Settings,
 	): Promise<ExtractionResult> {
 		// Attention: order is important because "@opendocsg/pdf2md" sets a global "document" variable
 		// which clashes with the createWorker() function because it then thinks it is inside a browser
@@ -45,7 +46,9 @@ export class DocumentExtractor {
 		const filenameWithoutExtension = filename.replace(".pdf", "");
 
 		const subfolder = `${extractRequest.targetPath}/${filenameWithoutExtension}`;
-		fs.mkdirSync(subfolder);
+		if (!fs.existsSync(subfolder)) {
+			fs.mkdirSync(subfolder);
+		}
 
 		const pathToPdf = `${subfolder}/${filename}`;
 
@@ -57,15 +60,17 @@ export class DocumentExtractor {
 		}).download();
 
 		const pagesFolder = `${subfolder}/pages`;
-		fs.mkdirSync(pagesFolder);
+		if (!fs.existsSync(pagesFolder)) {
+			fs.mkdirSync(pagesFolder);
+		}
 
 		let dataBuffer = fs.readFileSync(pathToPdf);
 		const pdfStat = await pdf(dataBuffer);
 		const numPages = pdfStat.numpages;
-		if (numPages > MAGIC_PAGES_LIMIT) {
+		if (numPages > settings.maxPagesLimit) {
 			throw new ExtractError(
 				extractRequest.document,
-				`Could not extract ${extractRequest.document.source_url}, num pages ${numPages} > limit of ${MAGIC_PAGES_LIMIT} pages.`,
+				`Could not extract ${extractRequest.document.source_url}, num pages ${numPages} > limit of ${settings.maxPagesLimit} pages.`,
 			);
 		}
 
@@ -107,6 +112,7 @@ export class DocumentExtractor {
 			extractedFiles.push({
 				page: parseInt(pdfPage),
 				path: outPath,
+				tokens: enc.encode(text).length,
 			} as ExtractedFile);
 		}
 
@@ -120,6 +126,9 @@ export class DocumentExtractor {
 			numPages: pdfPageFiles.length,
 			checksum: getHash(pathToPdf),
 			extractedFiles: extractedFiles,
+			totalTokens: extractedFiles
+				.map((f) => f.tokens)
+				.reduce((l, r) => l + r, 0),
 		} as ExtractionResult;
 	}
 }

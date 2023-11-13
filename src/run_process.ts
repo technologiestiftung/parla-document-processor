@@ -1,4 +1,4 @@
-import { Settings } from "./interfaces/Common.js";
+import { settings } from "./Settings.js";
 import { DocumentsProcessor } from "./processor/DocumentsProcessor.js";
 import {
 	clearDirectory,
@@ -9,21 +9,19 @@ import {
 
 const BATCH_SIZE = 20;
 
-const settings = {
-	postgresConnection: process.env.SUPABASE_DB_CONNECTION!,
-	supabaseUrl: process.env.SUPABASE_URL!,
-	supabaseAnonKey: process.env.SUPABASE_ANON_KEY!,
-	openaAiApiKey: process.env.OPENAI_API_KEY!,
-	processingDirectory: process.env.PROCESSING_DIR!,
-} as Settings;
-
 const processor = new DocumentsProcessor(settings);
 
 const unprocessedDocuments = await processor.find();
 
-const batches = splitArrayEqually(
-	unprocessedDocuments.slice(0, 1000), //TODO: remove
-	BATCH_SIZE,
+const documentsToProcess = unprocessedDocuments.slice(
+	0,
+	settings.maxDocumentsToProcess,
+);
+
+const batches = splitArrayEqually(documentsToProcess, BATCH_SIZE);
+
+console.log(
+	`Processing ${documentsToProcess.length} documents in ${batches.length} batches of size ${BATCH_SIZE}...`,
 );
 
 let embeddingTokenCount = 0;
@@ -38,6 +36,7 @@ for (let idx = 0; idx < batches.length; idx++) {
 			console.log(`Processing ${document.source_url} in batch ${idx}...`);
 			try {
 				const extractionResult = await processor.extract(document);
+
 				try {
 					const summarizeResult = await processor.summarize(extractionResult);
 					const embeddingResult = await processor.embedd(extractionResult);
