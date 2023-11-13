@@ -95,8 +95,19 @@ export class RedNumberImporter implements DocumentImporter {
 			);
 		});
 
-		console.log(`${remoteDocumentsToDelete.length} remote documents to delete`);
-		console.log(`${localDocumentsToAdd.length} local documents to add`);
+		console.log(
+			`${localDocuments.length} documents in source for "${this.documentType}"...`,
+		);
+		console.log(
+			`${documentsInDatabase.length} documents already registered in database...`,
+		);
+
+		console.log(
+			`${remoteDocumentsToDelete.length} "${this.documentType}" remote documents to delete from database...`,
+		);
+		console.log(
+			`${localDocumentsToAdd.length} "${this.documentType}" documents to add to database...`,
+		);
 
 		await Promise.all(
 			remoteDocumentsToDelete.map(

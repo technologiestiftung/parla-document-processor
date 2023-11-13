@@ -39,8 +39,12 @@ export class SchrAnfrImporter implements DocumentImporter {
 		const documentsInDatabase = await this
 			.sql`SELECT * FROM registered_documents where source_type = ${this.documentType}`;
 
-		console.log(`${documentsInPardok.length} documents in pardok`);
-		console.log(`${documentsInDatabase.length} documents in database`);
+		console.log(
+			`${documentsInPardok.length} documents in source for "${this.documentType}"...`,
+		);
+		console.log(
+			`${documentsInDatabase.length} documents already registered in database...`,
+		);
 
 		const remoteDocumentsToDelete = documentsInDatabase.filter((rd) => {
 			return (
@@ -57,9 +61,11 @@ export class SchrAnfrImporter implements DocumentImporter {
 		});
 
 		console.log(
-			`${remoteDocumentsToDelete.length} documents to delete from database`,
+			`${remoteDocumentsToDelete.length} "${this.documentType}" documents to delete from database...`,
 		);
-		console.log(`${localDocumentsToAdd.length} documents to add to database`);
+		console.log(
+			`${localDocumentsToAdd.length} "${this.documentType}" documents to add to database...`,
+		);
 
 		try {
 			await this.supabase

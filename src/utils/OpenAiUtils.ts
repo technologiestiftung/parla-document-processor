@@ -19,13 +19,20 @@ export async function generateEmbedding(
 ): Promise<OpenAIEmbeddingResponse> {
 	const embeddingResponse = await backOff(
 		async () =>
-			await openAi.createEmbedding({
-				model: settings.openAiEmbeddingModel,
-				input: content,
-			}),
+			await openAi.createEmbedding(
+				{
+					model: settings.openAiEmbeddingModel,
+					input: content,
+				},
+				{ timeout: 5000 },
+			),
 		{
+			startingDelay: 1000,
+			numOfAttempts: 10,
 			retry: (e: any, attemptNumber: number) => {
-				console.log(`retry #${attemptNumber} in generating embedding...`);
+				console.log(
+					`retry #${attemptNumber} in generating embedding, cause: ${e}`,
+				);
 				return true;
 			},
 		},
@@ -43,25 +50,30 @@ export async function generateTags(
 ): Promise<OpenAITagsResponse> {
 	const tagSummary = await backOff(
 		async () =>
-			await openAi.createChatCompletion({
-				model: settings.openAiModel,
-				messages: [
-					{
-						role: "system",
-						content:
-							"Du bist ein System, das in der Lage ist Text in inhaltlich relevante Schlagwörter / Tags zusammenzufassen. Generiere niemals mehr als 10 Tags. Es ist EXTREM WICHTIG, dass IMMER ein gültiges JSON Array zurückgegeben wird.",
-					},
-					{
-						role: "user",
-						content: `Extrahiere eine Liste von inhaltlich relevanten Tags aus dem folgenden Text. Generiere nicht mehr als 10 Tags. Gebe die Tags IMMER formatiert als syntaktisch gültiges JSON Array zurück. Es ist EXTREM WICHTIG, dass IMMER ein gültiges JSON Array zurückgegeben wird. Hier ist der Text: "${content}"`,
-					},
-				],
-				temperature: 0,
-				stream: false,
-			}),
+			await openAi.createChatCompletion(
+				{
+					model: settings.openAiModel,
+					messages: [
+						{
+							role: "system",
+							content:
+								"Du bist ein System, das in der Lage ist Text in inhaltlich relevante Schlagwörter / Tags zusammenzufassen. Generiere niemals mehr als 10 Tags. Es ist EXTREM WICHTIG, dass IMMER ein gültiges JSON Array zurückgegeben wird.",
+						},
+						{
+							role: "user",
+							content: `Extrahiere eine Liste von inhaltlich relevanten Tags aus dem folgenden Text. Generiere nicht mehr als 10 Tags. Gebe die Tags IMMER formatiert als syntaktisch gültiges JSON Array zurück. Es ist EXTREM WICHTIG, dass IMMER ein gültiges JSON Array zurückgegeben wird. Hier ist der Text: "${content}"`,
+						},
+					],
+					temperature: 0,
+					stream: false,
+				},
+				{ timeout: 10000 },
+			),
 		{
+			startingDelay: 1000,
+			numOfAttempts: 10,
 			retry: (e: any, attemptNumber: number) => {
-				console.log(`retry #${attemptNumber} in generating tags...`);
+				console.log(`retry #${attemptNumber} in generating tags, cause: ${e}`);
 				return true;
 			},
 		},
@@ -82,23 +94,28 @@ export async function generateSummary(
 ): Promise<OpenAITextResponse> {
 	const completeSummary = await backOff(
 		async () =>
-			await openAi.createChatCompletion({
-				model: settings.openAiModel,
-				messages: [
-					{
-						role: "system",
-						content:
-							"Du bist ein politischer Berater und antwortest auf Deutsch in grammatikalisch korrekter und formeller Sprache.",
-					},
-					{
-						role: "user",
-						content: `Fasse das folgende Dokument in weniger als 100 Worten kurz und prägnant zusammen. Die Antwort muss weniger als 100 Worte lang sein. "${content}"`,
-					},
-				],
-				temperature: 0,
-				stream: false,
-			}),
+			await openAi.createChatCompletion(
+				{
+					model: settings.openAiModel,
+					messages: [
+						{
+							role: "system",
+							content:
+								"Du bist ein politischer Berater und antwortest auf Deutsch in grammatikalisch korrekter und formeller Sprache.",
+						},
+						{
+							role: "user",
+							content: `Fasse das folgende Dokument in weniger als 100 Worten kurz und prägnant zusammen. Die Antwort muss weniger als 100 Worte lang sein. "${content}"`,
+						},
+					],
+					temperature: 0,
+					stream: false,
+				},
+				{ timeout: 10000 },
+			),
 		{
+			startingDelay: 1000,
+			numOfAttempts: 10,
 			retry: (e: any, attemptNumber: number) => {
 				console.log(`retry #${attemptNumber} in final summary, cause: ${e}`);
 				return true;
