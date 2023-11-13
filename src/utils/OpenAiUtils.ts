@@ -11,6 +11,7 @@ import {
 	splitInChunksAccordingToTokenLimit,
 } from "./utils.js";
 import { MAX_TOKEN_COUNT_FOR_SUMMARY } from "../processor/DocumentSummarizor.js";
+import { settings } from "../Settings.js";
 
 export async function generateEmbedding(
 	content: string,
@@ -19,7 +20,7 @@ export async function generateEmbedding(
 	const embeddingResponse = await backOff(
 		async () =>
 			await openAi.createEmbedding({
-				model: "text-embedding-ada-002",
+				model: settings.openAiEmbeddingModel,
 				input: content,
 			}),
 		{
@@ -43,7 +44,7 @@ export async function generateTags(
 	const tagSummary = await backOff(
 		async () =>
 			await openAi.createChatCompletion({
-				model: "gpt-3.5-turbo-1106",
+				model: settings.openAiModel,
 				messages: [
 					{
 						role: "system",
@@ -82,7 +83,7 @@ export async function generateSummary(
 	const completeSummary = await backOff(
 		async () =>
 			await openAi.createChatCompletion({
-				model: "gpt-3.5-turbo-1106",
+				model: settings.openAiModel,
 				messages: [
 					{
 						role: "system",

@@ -86,6 +86,8 @@ export interface Settings {
 	processingDirectory: string;
 	allowDeletion: boolean;
 	maxPagesLimit: number;
+	openAiModel: string;
+	openAiEmbeddingModel: string;
 }
 
 export interface TokenUsage {

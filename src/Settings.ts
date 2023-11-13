@@ -8,4 +8,5 @@ export const settings = {
 	allowDeletion: process.env.ALLOW_DELETION! === "true",
 	maxPagesLimit: parseInt(process.env.MAX_PAGES_LIMIT!),
 	openAiModel: process.env.OPENAI_MODEL!,
+	openAiEmbeddingModel: process.env.OPEN_AI_EMBEDDING_MODEL!,
 } as Settings;
