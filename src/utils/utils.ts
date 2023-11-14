@@ -134,6 +134,6 @@ export async function handleError(
 			`Error extracting document ${document.id} / ${document.source_url}: ${e.error}`,
 		);
 	} else {
-		console.log(`Error: ${JSON.stringify(e)} ${e}`);
+		console.log(`Error: ${e}`);
 	}
 }
