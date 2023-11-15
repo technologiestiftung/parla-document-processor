@@ -1,3 +1,4 @@
+import { createClient } from "@supabase/supabase-js";
 import { settings } from "./Settings.js";
 import { DocumentsProcessor } from "./processor/DocumentsProcessor.js";
 import {
@@ -8,6 +9,8 @@ import {
 } from "./utils/utils.js";
 
 console.log(settings);
+
+const supabase = createClient(settings.supabaseUrl, settings.supabaseAnonKey);
 
 const BATCH_SIZE = 20;
 
@@ -68,6 +71,12 @@ for (let idx = 0; idx < batches.length; idx++) {
 	);
 	clearDirectory(settings.processingDirectory);
 }
+
+// Regenerate indices
+console.log("Regenerating indices for chunks...");
+await supabase.rpc("regenerate_embedding_indices_for_chunks").select("*");
+console.log("Regenerating indices for summaries...");
+await supabase.rpc("regenerate_embedding_indices_for_summaries").select("*");
 
 // OpenAI pricing
 // $0.0001 / 1K tokens ada v2 embedding
