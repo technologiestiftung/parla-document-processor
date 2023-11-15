@@ -1,7 +1,6 @@
 import { SupabaseClient, createClient } from "@supabase/supabase-js";
 import postgres from "postgres";
-import { Settings } from "../../interfaces/Settings.js";
-import { DocumentImporter } from "../../interfaces/DocumentImporter.js";
+import { DocumentImporter, Settings } from "../../interfaces/Common.js";
 
 export class RedNumberImporter implements DocumentImporter {
 	documentType: string = "Hauptausschussprotokoll";
@@ -79,14 +78,6 @@ export class RedNumberImporter implements DocumentImporter {
 		const documentsInDatabase = await this
 			.sql`SELECT * FROM registered_documents where source_type = ${this.documentType}`;
 
-		const remoteDocumentsToDelete = documentsInDatabase.filter((rd) => {
-			return (
-				localDocuments.filter((ld) => {
-					return ld.href === rd.source_url;
-				}).length === 0
-			);
-		});
-
 		const localDocumentsToAdd = localDocuments.filter((ld) => {
 			return (
 				documentsInDatabase.filter((dd) => {
@@ -103,22 +94,35 @@ export class RedNumberImporter implements DocumentImporter {
 		);
 
 		console.log(
-			`${remoteDocumentsToDelete.length} "${this.documentType}" remote documents to delete from database...`,
-		);
-		console.log(
 			`${localDocumentsToAdd.length} "${this.documentType}" documents to add to database...`,
 		);
 
-		await Promise.all(
-			remoteDocumentsToDelete.map(
-				async (rd) =>
-					await this.supabase
-						.from("registered_documents")
-						.delete()
-						.eq("id", rd.id),
-			),
-		);
+		// delete only if expliclty allowed
+		if (this.settings.allowDeletion) {
+			const remoteDocumentsToDelete = documentsInDatabase.filter((rd) => {
+				return (
+					localDocuments.filter((ld) => {
+						return ld.href === rd.source_url;
+					}).length === 0
+				);
+			});
 
+			console.log(
+				`${remoteDocumentsToDelete.length} "${this.documentType}" remote documents to delete from database...`,
+			);
+
+			await Promise.all(
+				remoteDocumentsToDelete.map(
+					async (rd) =>
+						await this.supabase
+							.from("registered_documents")
+							.delete()
+							.eq("id", rd.id),
+				),
+			);
+		}
+
+		// insert documents
 		const values = localDocumentsToAdd.map((ld) => {
 			return {
 				source_type: this.documentType,

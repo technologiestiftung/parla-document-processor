@@ -1,8 +1,7 @@
 import { SupabaseClient, createClient } from "@supabase/supabase-js";
 import postgres from "postgres";
-import { Settings } from "../../interfaces/Settings.js";
-import { DocumentImporter } from "../../interfaces/DocumentImporter.js";
 import { parseXML2JSON } from "./ParseXmlToJson.js";
+import { DocumentImporter, Settings } from "../../interfaces/Common.js";
 
 export class SchrAnfrImporter implements DocumentImporter {
 	documentType: string = "Schriftliche Anfrage";
@@ -46,13 +45,6 @@ export class SchrAnfrImporter implements DocumentImporter {
 			`${documentsInDatabase.length} documents already registered in database...`,
 		);
 
-		const remoteDocumentsToDelete = documentsInDatabase.filter((rd) => {
-			return (
-				documentsInPardok.filter((d) => d.LokURL[0] === rd.source_url)
-					.length === 0
-			);
-		});
-
 		const localDocumentsToAdd = documentsInPardok.filter((ld) => {
 			return (
 				documentsInDatabase.filter((rd) => rd.source_url === ld.LokURL[0])
@@ -60,22 +52,31 @@ export class SchrAnfrImporter implements DocumentImporter {
 			);
 		});
 
-		console.log(
-			`${remoteDocumentsToDelete.length} "${this.documentType}" documents to delete from database...`,
-		);
-		console.log(
-			`${localDocumentsToAdd.length} "${this.documentType}" documents to add to database...`,
-		);
-
 		try {
-			await this.supabase
-				.from("registered_documents")
-				.delete()
-				.in(
-					"id",
-					remoteDocumentsToDelete.map((d) => d.id),
+			// delete only if explicitly allowed
+			if (this.settings.allowDeletion) {
+				const remoteDocumentsToDelete = documentsInDatabase.filter((rd) => {
+					return (
+						documentsInPardok.filter((d) => d.LokURL[0] === rd.source_url)
+							.length === 0
+					);
+				});
+				console.log(
+					`${remoteDocumentsToDelete.length} "${this.documentType}" documents to delete from database...`,
 				);
+				await this.supabase
+					.from("registered_documents")
+					.delete()
+					.in(
+						"id",
+						remoteDocumentsToDelete.map((d) => d.id),
+					);
+			}
 
+			// insert new documents
+			console.log(
+				`${localDocumentsToAdd.length} "${this.documentType}" documents to add to database...`,
+			);
 			const values = localDocumentsToAdd.map((d) => {
 				return {
 					source_type: this.documentType,

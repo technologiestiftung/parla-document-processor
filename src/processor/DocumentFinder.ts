@@ -16,6 +16,8 @@ export class DocumentFinder {
 				"id, source_url, source_type, registered_at, metadata, processed_documents(*)",
 			);
 
+		console.log(data?.length, error);
+
 		// First: cleanup unsuccessfully processed documents
 		if (settings.allowDeletion) {
 			const unsuccessfullyProcessedRegisteredDocuments = (data ?? []).filter(
