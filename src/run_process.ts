@@ -7,6 +7,8 @@ import {
 	sumTokens,
 } from "./utils/utils.js";
 
+console.log(settings);
+
 const BATCH_SIZE = 20;
 
 const processor = new DocumentsProcessor(settings);
