@@ -3,7 +3,7 @@ name: Process documents
 on:
   workflow_dispatch: {}
   repository_dispatch:
-    types: [ki_anfragen_process_documents]
+    types: [parla_process_documents]
 
 jobs:
   process_documents:
