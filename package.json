@@ -1,5 +1,5 @@
 {
-	"name": "@technologiestiftung/ki-anfragen-data-extractor",
+	"name": "@technologiestiftung/parla-document-processor",
 	"version": "1.0.1",
 	"description": "",
 	"main": "index.js",

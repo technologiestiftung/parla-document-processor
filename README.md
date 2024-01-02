@@ -6,13 +6,13 @@
 
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
-# ki-anfragen-document-processor
+# parla-document-processor
 
-This repository contains scripts for pre-processing PDF files for later use in the KI-Anfragen project. It offers a generic way of importing / registering and processing PDF documents. For the use case of "KI-Anfragen", the publicly accessible PDF documents of "Schriftliche Anfragen" and "Hauptausschussprotokolle" are used.
+This repository contains scripts for pre-processing PDF files for later use in the explorational project _Parla_. It offers a generic way of importing / registering and processing PDF documents. For the use case of _Parla_, the publicly accessible PDF documents of "Schriftliche Anfragen" and "Hauptausschussprotokolle" are used.
 
 ## Prerequisites
 
-- Running and accessible Supabase database with the schema defined in https://github.com/technologiestiftung/ki-anfragen-api
+- Running and accessible Supabase database with the schema defined in https://github.com/technologiestiftung/parla-api
 - OpenAI API Key
 
 ## Features
@@ -61,8 +61,8 @@ MAX_DOCUMENTS_TO_PROCESS=1000 // A maximum number of documents to process
 
 ## Related repositories
 
-- API and database definition: https://github.com/technologiestiftung/ki-anfragen-api
-- KI-Anfragen frontend: https://github.com/technologiestiftung/ki-anfragen-frontend
+- API and database definition: https://github.com/technologiestiftung/parla-api
+- _Parla_ frontend: https://github.com/technologiestiftung/parla-frontend
 
 ## Contributors ✨
 
@@ -74,8 +74,8 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 <table>
   <tbody>
     <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://fabianmoronzirfas.me/"><img src="https://avatars.githubusercontent.com/u/315106?v=4?s=100" width="100px;" alt="Fabian Morón Zirfas"/><br /><sub><b>Fabian Morón Zirfas</b></sub></a><br /><a href="https://github.com/technologiestiftung/ki-anfragen-document-processor/commits?author=ff6347" title="Code">💻</a> <a href="#ideas-ff6347" title="Ideas, Planning, & Feedback">🤔</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Jaszkowic"><img src="https://avatars.githubusercontent.com/u/10830180?v=4?s=100" width="100px;" alt="Jonas Jaszkowic"/><br /><sub><b>Jonas Jaszkowic</b></sub></a><br /><a href="https://github.com/technologiestiftung/ki-anfragen-document-processor/commits?author=Jaszkowic" title="Code">💻</a> <a href="#ideas-Jaszkowic" title="Ideas, Planning, & Feedback">🤔</a> <a href="#infra-Jaszkowic" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://fabianmoronzirfas.me/"><img src="https://avatars.githubusercontent.com/u/315106?v=4?s=100" width="100px;" alt="Fabian Morón Zirfas"/><br /><sub><b>Fabian Morón Zirfas</b></sub></a><br /><a href="https://github.com/technologiestiftung/parla-document-processor/commits?author=ff6347" title="Code">💻</a> <a href="#ideas-ff6347" title="Ideas, Planning, & Feedback">🤔</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Jaszkowic"><img src="https://avatars.githubusercontent.com/u/10830180?v=4?s=100" width="100px;" alt="Jonas Jaszkowic"/><br /><sub><b>Jonas Jaszkowic</b></sub></a><br /><a href="https://github.com/technologiestiftung/parla-document-processor/commits?author=Jaszkowic" title="Code">💻</a> <a href="#ideas-Jaszkowic" title="Ideas, Planning, & Feedback">🤔</a> <a href="#infra-Jaszkowic" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a></td>
     </tr>
   </tbody>
 </table>
@@ -117,5 +117,5 @@ This project follows the [all-contributors](https://github.com/all-contributors/
 
 ## Related Projects
 
-- https://github.com/technologiestiftung/ki-anfragen-frontend
-- https://github.com/technologiestiftung/ki-anfragen-api
+- https://github.com/technologiestiftung/parla-frontend
+- https://github.com/technologiestiftung/parla-api
