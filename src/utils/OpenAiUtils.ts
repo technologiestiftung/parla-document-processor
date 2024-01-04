@@ -64,7 +64,7 @@ export async function generateTags(
 							Achte darauf, dass keine Fakten verändert werden.
 							Verändere keine Namen und keine Berufsbezeichnungen.
 							Verändere keine Zahlen und keine Datumsangaben.
-							Generiere 10 Schlagworte. 
+							Generiere 10 Tags. 
 							Gebe die Tags immer formatiert als syntaktisch gültiges JSON Array zurück.`,
 						},
 						{
