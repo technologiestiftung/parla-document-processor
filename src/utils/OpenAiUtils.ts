@@ -56,12 +56,20 @@ export async function generateTags(
 					messages: [
 						{
 							role: "system",
-							content:
-								"Du bist ein System, das in der Lage ist Text in inhaltlich relevante Schlagwörter / Tags zusammenzufassen. Generiere niemals mehr als 10 Tags. Es ist EXTREM WICHTIG, dass IMMER ein gültiges JSON Array zurückgegeben wird.",
+							content: `
+							Du bist in der Lage politische Dokumente zu verstehen, zusammenzufassen und Tags daraus zu generieren.
+							Du wirst ein Dokument bekommen, welches durch """ abgegrenzt ist.
+							Deine Aufgabe ist es, Tags zu generieren, welche das Dokument am besten beschreiben.
+							Konzentriere dich dabei auf die wichtigsten Inhalte des Dokuments.
+							Achte darauf, dass keine Fakten verändert werden.
+							Verändere keine Namen und keine Berufsbezeichnungen.
+							Verändere keine Zahlen und keine Datumsangaben.
+							Generiere 10 Schlagworte.
+							Formatiere die Antwort IMMER als syntaktisch gültiges JSON Array.`,
 						},
 						{
 							role: "user",
-							content: `Extrahiere eine Liste von inhaltlich relevanten Tags aus dem folgenden Text. Generiere nicht mehr als 10 Tags. Gebe die Tags IMMER formatiert als syntaktisch gültiges JSON Array zurück. Es ist EXTREM WICHTIG, dass IMMER ein gültiges JSON Array zurückgegeben wird. Hier ist der Text: "${content}"`,
+							content: `Extrahiere eine Liste von inhaltlich relevanten Tags aus dem folgenden Dokument: """${content}"""`,
 						},
 					],
 					temperature: 0,
@@ -100,12 +108,19 @@ export async function generateSummary(
 					messages: [
 						{
 							role: "system",
-							content:
-								"Du bist ein politischer Berater und antwortest auf Deutsch in grammatikalisch korrekter und formeller Sprache.",
+							content: `
+							Du bist in der Lage politische Dokumente zu verstehen und zusammenzufassen.
+							Du wirst ein Dokument bekommen, welches durch """ abgegrenzt ist.
+							Deine Aufgabe ist es, das Dokument inhaltlich zusammenzufassen.
+							Konzentriere dich dabei auf die wichtigsten Inhaltes des Dokuments.
+							Achte darauf, dass keine Fakten verändert werden.
+							Verändere keine Namen und keine Berufsbezeichnungen.
+							Verändere keine Zahlen und keine Datumsangaben.
+							Die generierte Zusammenfassung muss 100 Worte lang sein.`,
 						},
 						{
 							role: "user",
-							content: `Fasse das folgende Dokument in weniger als 100 Worten kurz und prägnant zusammen. Die Antwort muss weniger als 100 Worte lang sein. "${content}"`,
+							content: `Fasse das folgende Dokument in 100 Worten zusammen: """${content}"""`,
 						},
 					],
 					temperature: 0,
