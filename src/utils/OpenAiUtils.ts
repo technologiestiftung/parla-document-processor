@@ -60,12 +60,12 @@ export async function generateTags(
 							Du bist in der Lage politische Dokumente zu verstehen, zusammenzufassen und Tags daraus zu generieren.
 							Du wirst ein Dokument bekommen, welches durch """ abgegrenzt ist.
 							Deine Aufgabe ist es, Tags zu generieren, welche das Dokument am besten beschreiben.
-							Konzentriere dich dabei auf die wichtigsten Inhaltes des Dokuments.
+							Konzentriere dich dabei auf die wichtigsten Inhalte des Dokuments.
 							Achte darauf, dass keine Fakten verändert werden.
 							Verändere keine Namen und keine Berufsbezeichnungen.
 							Verändere keine Zahlen und keine Datumsangaben.
-							Generiere 10 Schlagworte. 
-							Gebe die Tags immer formatiert als syntaktisch gültiges JSON Array zurück.`,
+							Generiere 10 Schlagworte.
+							Formatiere die Antwort IMMER als syntaktisch gültiges JSON Array.`,
 						},
 						{
 							role: "user",
