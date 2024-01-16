@@ -72,11 +72,9 @@ for (let idx = 0; idx < batches.length; idx++) {
 	clearDirectory(settings.processingDirectory);
 }
 
-// Regenerate indices
-console.log("Regenerating indices for chunks...");
-await supabase.rpc("regenerate_embedding_indices_for_chunks").select("*");
-console.log("Regenerating indices for summaries...");
-await supabase.rpc("regenerate_embedding_indices_for_summaries").select("*");
+// Attention:
+// Upon arrival of new data, the indices on database tables must be regenerated.
+// This can be done periodically by defining cron jobs in the database using pg_cron.
 
 // OpenAI pricing
 // $0.0001 / 1K tokens ada v2 embedding
