@@ -13,6 +13,7 @@ import {
 } from "../interfaces/Common.js";
 // @ts-ignore
 import pdf from "pdf-page-counter";
+import puppeteer from "puppeteer";
 
 const MAGIC_TEXT_TOO_SHORT_LENGTH = 32;
 const MAGIC_OCR_WIDTH = 2048;
@@ -52,12 +53,22 @@ export class DocumentExtractor {
 
 		const pathToPdf = `${subfolder}/${filename}`;
 
-		// @ts-ignore
-		await new Downloader({
-			url: extractRequest.document.source_url,
-			directory: subfolder,
-			timeout: MAGIC_TIMEOUT,
-		}).download();
+		if (extractRequest.document.source_type === "Webseite") {
+			// Documents of type "Webseite" must be converted to PDF first, they cannot be downloaded directly
+			// After that, they are treated identically as all other documents
+			const browser = await puppeteer.launch();
+			const page = await browser.newPage();
+			await page.goto(extractRequest.document.source_url);
+			await page.pdf({ path: pathToPdf, format: "A4" });
+			await browser.close();
+		} else {
+			// @ts-ignore
+			await new Downloader({
+				url: extractRequest.document.source_url,
+				directory: subfolder,
+				timeout: MAGIC_TIMEOUT,
+			}).download();
+		}
 
 		const pagesFolder = `${subfolder}/pages`;
 		if (!fs.existsSync(pagesFolder)) {
