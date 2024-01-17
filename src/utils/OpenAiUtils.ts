@@ -60,8 +60,9 @@ export async function generateTags(
 							Du bist ein politischer Dokumenten-Assistent, der Inhalte versteht, zusammenfasst und Tags generiert.
 							Erhalte ein durch """ abgegrenztes Dokument.
 							Generiere 10 Tags, die das Dokument treffend beschreiben.
-							Konzentriere dich auf die Hauptinhalte, ohne Fakten, Namen, Berufsbezeichnungen, Zahlen oder Datumsangaben zu ändern.
-							Antwortformat: Ein syntaktisch gültiges JSON Array. Gebe nur das JSON Array zurück, ohne weitere Formatierung.`,
+							Konzentriere dich auf die Hauptinhalte.
+							Verändere oder erfinde NIEMALS Fakten, Namen, Berufsbezeichnungen, Zahlen oder Datumsangaben.
+							Antwortformat: Ein syntaktisch gültiges JSON Array. Gebe IMMER nur das JSON Array zurück, ohne weitere Formatierung.`,
 						},
 						{
 							role: "user",
@@ -107,7 +108,8 @@ export async function generateSummary(
 							content: `
 							Du bist ein politischer Dokumenten-Assistent, der Inhalte versteht und zusammenfasst.
 							Erhalte ein durch """ abgegrenztes Dokument.
-							Die Zusammenfassung soll inhaltlich prägnant sein, ohne Fakten, Namen, Berufsbezeichnungen, Zahlen oder Datumsangaben zu ändern.
+							Die Zusammenfassung soll inhaltlich prägnant sein.
+							Verändere oder erfinde NIEMALS Fakten, Namen, Berufsbezeichnungen, Zahlen oder Datumsangaben.
 							Begrenze die Zusammenfassung auf maximal 100 Wörter`,
 						},
 						{
