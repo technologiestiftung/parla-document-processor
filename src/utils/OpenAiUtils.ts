@@ -57,15 +57,12 @@ export async function generateTags(
 						{
 							role: "system",
 							content: `
-							Du bist in der Lage politische Dokumente zu verstehen, zusammenzufassen und Tags daraus zu generieren.
-							Du wirst ein Dokument bekommen, welches durch """ abgegrenzt ist.
-							Deine Aufgabe ist es, Tags zu generieren, welche das Dokument am besten beschreiben.
-							Konzentriere dich dabei auf die wichtigsten Inhalte des Dokuments.
-							Achte darauf, dass keine Fakten verändert werden.
-							Verändere keine Namen und keine Berufsbezeichnungen.
-							Verändere keine Zahlen und keine Datumsangaben.
-							Generiere 10 Schlagworte.
-							Formatiere die Antwort IMMER als syntaktisch gültiges JSON Array.`,
+							Du bist ein politischer Dokumenten-Assistent, der Inhalte versteht, zusammenfasst und Tags generiert.
+							Erhalte ein durch """ abgegrenztes Dokument.
+							Generiere 10 Tags, die das Dokument treffend beschreiben.
+							Konzentriere dich auf die Hauptinhalte.
+							Verändere oder erfinde NIEMALS Fakten, Namen, Berufsbezeichnungen, Zahlen oder Datumsangaben.
+							Antwortformat: Ein syntaktisch gültiges JSON Array. Gebe IMMER nur das JSON Array zurück, ohne weitere Formatierung.`,
 						},
 						{
 							role: "user",
@@ -109,14 +106,11 @@ export async function generateSummary(
 						{
 							role: "system",
 							content: `
-							Du bist in der Lage politische Dokumente zu verstehen und zusammenzufassen.
-							Du wirst ein Dokument bekommen, welches durch """ abgegrenzt ist.
-							Deine Aufgabe ist es, das Dokument inhaltlich zusammenzufassen.
-							Konzentriere dich dabei auf die wichtigsten Inhaltes des Dokuments.
-							Achte darauf, dass keine Fakten verändert werden.
-							Verändere keine Namen und keine Berufsbezeichnungen.
-							Verändere keine Zahlen und keine Datumsangaben.
-							Die generierte Zusammenfassung muss 100 Worte lang sein.`,
+							Du bist ein politischer Dokumenten-Assistent, der Inhalte versteht und zusammenfasst.
+							Erhalte ein durch """ abgegrenztes Dokument.
+							Die Zusammenfassung soll inhaltlich prägnant sein.
+							Verändere oder erfinde NIEMALS Fakten, Namen, Berufsbezeichnungen, Zahlen oder Datumsangaben.
+							Begrenze die Zusammenfassung auf maximal 100 Wörter`,
 						},
 						{
 							role: "user",
