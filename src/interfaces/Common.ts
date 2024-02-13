@@ -81,7 +81,7 @@ export interface DocumentImporter {
 export interface Settings {
 	postgresConnection: string;
 	supabaseUrl: string;
-	supabaseAnonKey: string;
+	supabaseServiceRoleKey: string;
 	openaAiApiKey: string;
 	processingDirectory: string;
 	allowDeletion: boolean;
