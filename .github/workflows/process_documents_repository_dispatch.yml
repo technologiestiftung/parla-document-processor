@@ -1,12 +1,13 @@
-name: Process documents
+name: Process documents (repository_dispatch)
 
 on:
-  workflow_dispatch: {}
   repository_dispatch:
     types: [parla_process_documents]
 
 jobs:
   process_documents:
+    name: parla-process-documents-${{ github.event.client_payload.environment }}
+    environment: ${{ github.event.client_payload.environment }}
     runs-on: ubuntu-latest
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
