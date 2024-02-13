@@ -14,7 +14,7 @@ export class RedNumberImporter implements DocumentImporter {
 		this.sql = postgres(settings.postgresConnection);
 		this.supabase = createClient(
 			settings.supabaseUrl,
-			settings.supabaseAnonKey,
+			settings.supabaseServiceRoleKey,
 		);
 	}
 

@@ -10,7 +10,10 @@ import {
 
 console.log(settings);
 
-const supabase = createClient(settings.supabaseUrl, settings.supabaseAnonKey);
+const supabase = createClient(
+	settings.supabaseUrl,
+	settings.supabaseServiceRoleKey,
+);
 
 const BATCH_SIZE = 20;
 
