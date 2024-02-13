@@ -30,10 +30,20 @@ export class SchrAnfrImporter implements DocumentImporter {
 				!v.VFunktion || v.VFunktion.length === 0 || v.VFunktion[0] !== "delete"
 			);
 		});
-		const documentsInPardok = vorgangs
+		let documentsInPardok = vorgangs
 			.flatMap((v) => v.Dokument)
 			.filter((d) => d.LokURL && d.DokTyp)
 			.filter((d) => d.DokTyp[0] === "SchrAnfr");
+
+		// Limit the number of documents to import. This is done for testing and staging
+		// environment where we do not want the imported documents to grow.
+		// -1 means do not set a limit.
+		if (this.settings.maxDocumentsToImportPerDocumentType > -1) {
+			documentsInPardok = documentsInPardok.slice(
+				0,
+				this.settings.maxDocumentsToImportPerDocumentType,
+			);
+		}
 
 		const documentsInDatabase = await this
 			.sql`SELECT * FROM registered_documents where source_type = ${this.documentType}`;
