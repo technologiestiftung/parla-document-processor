@@ -2,7 +2,7 @@ import { Settings } from "./interfaces/Common.js";
 export const settings = {
 	postgresConnection: process.env.SUPABASE_DB_CONNECTION!,
 	supabaseUrl: process.env.SUPABASE_URL!,
-	supabaseAnonKey: process.env.SUPABASE_ANON_KEY!,
+	supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
 	openaAiApiKey: process.env.OPENAI_API_KEY!,
 	processingDirectory: process.env.PROCESSING_DIR!,
 	allowDeletion: process.env.ALLOW_DELETION! === "true",

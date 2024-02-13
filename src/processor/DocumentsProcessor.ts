@@ -26,7 +26,7 @@ export class DocumentsProcessor {
 		this.sql = postgres(settings.postgresConnection);
 		this.supabase = createClient(
 			settings.supabaseUrl,
-			settings.supabaseAnonKey,
+			settings.supabaseServiceRoleKey,
 		);
 		this.openAi = new OpenAIApi(
 			new Configuration({
