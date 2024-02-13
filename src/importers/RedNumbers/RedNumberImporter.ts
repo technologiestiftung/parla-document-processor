@@ -75,6 +75,16 @@ export class RedNumberImporter implements DocumentImporter {
 			}
 		}
 
+		// Limit the number of documents to import. This is done for testing and staging
+		// environment where we do not want the imported documents to grow.
+		// -1 means do not set a limit.
+		if (this.settings.maxDocumentsToImportPerDocumentType > -1) {
+			localDocuments = localDocuments.slice(
+				0,
+				this.settings.maxDocumentsToImportPerDocumentType,
+			);
+		}
+
 		const documentsInDatabase = await this
 			.sql`SELECT * FROM registered_documents where source_type = ${this.documentType}`;
 
