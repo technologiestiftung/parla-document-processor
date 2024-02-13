@@ -1,12 +1,20 @@
 name: Process documents
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        description: Which environment to use
+        options:
+          - production
+          - staging
   repository_dispatch:
     types: [parla_process_documents]
 
 jobs:
   process_documents:
+    environment: ${{ github.event.inputs.environment }}
     runs-on: ubuntu-latest
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
