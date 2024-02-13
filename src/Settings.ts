@@ -9,5 +9,10 @@ export const settings = {
 	maxPagesLimit: parseInt(process.env.MAX_PAGES_LIMIT!),
 	openAiModel: process.env.OPENAI_MODEL!,
 	openAiEmbeddingModel: process.env.OPENAI_EMBEDDING_MODEL!,
-	maxDocumentsToProcess: parseInt(process.env.MAX_DOCUMENTS_TO_PROCESS!),
+	maxDocumentsToProcessInOneRun: parseInt(
+		process.env.MAX_DOCUMENTS_TO_PROCESS_IN_ONE_RUN!,
+	),
+	maxDocumentsToImportPerDocumentType: parseInt(
+		process.env.MAX_DOCUMENTS_TO_IMPORT_PER_DOCUMENT_TYPE!,
+	),
 } as Settings;
