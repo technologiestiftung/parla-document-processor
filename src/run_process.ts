@@ -1,4 +1,3 @@
-import { createClient } from "@supabase/supabase-js";
 import { settings } from "./Settings.js";
 import { DocumentsProcessor } from "./processor/DocumentsProcessor.js";
 import {
@@ -10,11 +9,6 @@ import {
 
 console.log(settings);
 
-const supabase = createClient(
-	settings.supabaseUrl,
-	settings.supabaseServiceRoleKey,
-);
-
 const BATCH_SIZE = 20;
 
 const processor = new DocumentsProcessor(settings);
@@ -23,7 +17,7 @@ const unprocessedDocuments = await processor.find();
 
 const documentsToProcess = unprocessedDocuments.slice(
 	0,
-	settings.maxDocumentsToProcess,
+	settings.maxDocumentsToProcessInOneRun,
 );
 
 const batches = splitArrayEqually(documentsToProcess, BATCH_SIZE);
