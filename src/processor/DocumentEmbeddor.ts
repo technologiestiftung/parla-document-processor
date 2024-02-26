@@ -1,3 +1,4 @@
+import { ProcessedDocument } from "./../interfaces/Common";
 import fs from "fs";
 import { OpenAIApi } from "openai";
 import { generateEmbedding } from "../utils/OpenAiUtils.js";
@@ -7,6 +8,8 @@ import {
 	EmbeddingResult,
 	Chunk,
 	Embedding,
+	RegisteredDocument,
+	ProcessedDocumentChunk,
 } from "../interfaces/Common.js";
 
 // Magic token limit assuming we use a model with 16k context token limit
@@ -72,6 +75,52 @@ export class DocumentEmbeddor {
 		return {
 			document: extractionResult.document,
 			processedDocument: extractionResult.processedDocument,
+			embeddings: embeddings,
+			tokenUsage: totalTokenUsage,
+		} as EmbeddingResult;
+	}
+
+	static async regenerateEmbeddings(
+		registeredDocument: RegisteredDocument,
+		processedDocument: ProcessedDocument,
+		processedDocumentChunks: Array<ProcessedDocumentChunk>,
+		openAi: OpenAIApi,
+	): Promise<EmbeddingResult> {
+		const chunkEmbeddings = await Promise.all(
+			processedDocumentChunks.map(async (chunk) => {
+				const embedding = await generateEmbedding(chunk.content, openAi);
+				return {
+					...chunk,
+					embedding: embedding,
+					embeddingOld: chunk.embedding,
+				};
+			}),
+		);
+
+		const embeddings = chunkEmbeddings.map((emb) => {
+			const oldEmbedding = emb.embeddingOld
+				.replaceAll("[", "")
+				.replaceAll("]", "")
+				.split(",")
+				.map((x) => parseFloat(x));
+
+			return {
+				id: emb.id,
+				content: emb.content,
+				embedding: emb.embedding.embedding,
+				embeddingOld: oldEmbedding,
+				chunkIndex: emb.chunk_index,
+				page: emb.page,
+			} as Embedding;
+		});
+
+		const totalTokenUsage = chunkEmbeddings
+			.map((chunk) => chunk.embedding.tokenUsage)
+			.reduce((total, num) => total + num, 0);
+
+		return {
+			document: registeredDocument,
+			processedDocument: processedDocument,
 			embeddings: embeddings,
 			tokenUsage: totalTokenUsage,
 		} as EmbeddingResult;

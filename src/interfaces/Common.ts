@@ -5,6 +5,8 @@ export interface Embedding {
 	embedding: Array<number>;
 	chunkIndex: number;
 	page: number;
+	id: number | undefined;
+	embeddingOld: Array<number> | undefined;
 }
 
 export interface EmbeddingResult {
@@ -103,3 +105,6 @@ export type RegisteredDocument =
 
 export type ProcessedDocument =
 	Database["public"]["Tables"]["processed_documents"]["Row"];
+
+export type ProcessedDocumentChunk =
+	Database["public"]["Tables"]["processed_document_chunks"]["Row"];

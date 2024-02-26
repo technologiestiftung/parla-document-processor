@@ -5,8 +5,9 @@ import {
 	EmbeddingResult,
 	ExtractRequest,
 	ExtractionResult,
-	ProcessedDocument,
 	RegisteredDocument,
+	ProcessedDocumentChunk,
+	ProcessedDocument,
 	Settings,
 	SummarizeResult,
 } from "../interfaces/Common.js";
@@ -100,6 +101,54 @@ export class DocumentsProcessor {
 					};
 				}),
 			);
+
+		return embeddingResult;
+	}
+
+	async regenerateChunksEmbeddings(
+		registeredDocument: RegisteredDocument,
+	): Promise<EmbeddingResult> {
+		const { data: processedDoc, error: processedDocError } = await this.supabase
+			.from("processed_documents")
+			.select("*")
+			.eq("registered_document_id", registeredDocument.id)
+			.single<ProcessedDocument>();
+
+		const { data: processedDocChunks, error: processedDocChunksError } =
+			await this.supabase
+				.from("processed_document_chunks")
+				.select("*")
+				.eq("processed_document_id", processedDoc!.id)
+				.returns<Array<ProcessedDocumentChunk>>();
+
+		console.log(`found ${processedDocChunks?.length} chunks`);
+		const embeddingResult = await DocumentEmbeddor.regenerateEmbeddings(
+			registeredDocument,
+			processedDoc,
+			processedDocChunks!,
+			this.openAi,
+		);
+
+		console.log(`regenerated ${embeddingResult.embeddings.length} chunks`);
+
+		await Promise.all(
+			embeddingResult.embeddings.map(async (embedding) => {
+				const { data, error } = await this.supabase
+					.from("processed_document_chunks")
+					.update({
+						// Attention: This is by design, not a mistake.
+						// We assign embedding to embedding_old in the database
+						// and vice versa. The final switch from old embedding to new embedding
+						// can then be done with a database update statement, before / at the same time
+						// the API is updated to also use the new embedding. This way we avoid
+						// that API embeddings and database embeddings are out of sync.
+						embedding: embedding.embeddingOld,
+						embedding_old: embedding.embedding,
+					})
+					.eq("id", embedding.id);
+				console.log(data, error);
+			}),
+		);
 
 		return embeddingResult;
 	}
