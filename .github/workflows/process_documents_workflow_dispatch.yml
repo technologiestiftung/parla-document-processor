@@ -30,7 +30,7 @@ jobs:
 
     steps:
       - name: checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: preparation
         run: npm ci && mkdir -p processing_data && curl https://oxzjdwqsmpgqlrziuugr.supabase.co/storage/v1/object/public/assets/deu.traineddata > deu.traineddata && ls -all
       - name: register documents
