@@ -88,34 +88,28 @@ export class DocumentEmbeddor {
 	): Promise<EmbeddingResult> {
 		const chunkEmbeddings = await Promise.all(
 			processedDocumentChunks.map(async (chunk) => {
-				const embedding = await generateEmbedding(chunk.content, openAi);
+				const embeddingRespone = await generateEmbedding(chunk.content, openAi);
 				return {
 					...chunk,
-					embedding: embedding,
-					embeddingOld: chunk.embedding,
+					embedding: [], // not used
+					embeddingTemp: embeddingRespone, // newly generated embedding
 				};
 			}),
 		);
 
 		const embeddings = chunkEmbeddings.map((emb) => {
-			const oldEmbedding = emb.embeddingOld
-				.replaceAll("[", "")
-				.replaceAll("]", "")
-				.split(",")
-				.map((x) => parseFloat(x));
-
 			return {
 				id: emb.id,
 				content: emb.content,
-				embedding: emb.embedding.embedding,
-				embeddingOld: oldEmbedding,
+				embedding: [], // not used
+				embeddingTemp: emb.embeddingTemp.embedding, // newly generated embedding
 				chunkIndex: emb.chunk_index,
 				page: emb.page,
 			} as Embedding;
 		});
 
 		const totalTokenUsage = chunkEmbeddings
-			.map((chunk) => chunk.embedding.tokenUsage)
+			.map((chunk) => chunk.embeddingTemp.tokenUsage)
 			.reduce((total, num) => total + num, 0);
 
 		return {

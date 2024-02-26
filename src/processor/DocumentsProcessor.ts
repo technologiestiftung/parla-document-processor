@@ -136,14 +136,11 @@ export class DocumentsProcessor {
 				const { data, error } = await this.supabase
 					.from("processed_document_chunks")
 					.update({
-						// Attention: This is by design, not a mistake.
-						// We assign embedding to embedding_old in the database
-						// and vice versa. The final switch from old embedding to new embedding
+						// The final switch from old embedding to new embedding
 						// can then be done with a database update statement, before / at the same time
 						// the API is updated to also use the new embedding. This way we avoid
 						// that API embeddings and database embeddings are out of sync.
-						embedding: embedding.embeddingOld,
-						embedding_old: embedding.embedding,
+						embedding_temp: embedding.embeddingTemp,
 					})
 					.eq("id", embedding.id);
 				console.log(data, error);

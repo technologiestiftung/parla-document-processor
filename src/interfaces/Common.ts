@@ -6,7 +6,7 @@ export interface Embedding {
 	chunkIndex: number;
 	page: number;
 	id: number | undefined;
-	embeddingOld: Array<number> | undefined;
+	embeddingTemp: Array<number> | undefined;
 }
 
 export interface EmbeddingResult {
