@@ -10,7 +10,7 @@ import { RegisteredDocument } from "./interfaces/Common.js";
 
 console.log(settings);
 
-const BATCH_SIZE = 1;
+const BATCH_SIZE = 20;
 
 const processor = new DocumentsProcessor(settings);
 
@@ -51,7 +51,12 @@ for (let idx = 0; idx < batches.length; idx++) {
 						document,
 					);
 
-					const tokens = embeddingResult.tokenUsage;
+					const summaryEmbedding = await processor.regenerateSummaryEmbeddings(
+						document,
+					);
+
+					const tokens =
+						embeddingResult.tokenUsage + summaryEmbedding.tokenUsage;
 					embeddingTokenCount += tokens;
 
 					console.log(

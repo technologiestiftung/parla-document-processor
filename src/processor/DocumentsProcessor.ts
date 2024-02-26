@@ -10,6 +10,8 @@ import {
 	ProcessedDocument,
 	Settings,
 	SummarizeResult,
+	ProcessedDocumentSummary,
+	SummaryEmbeddingResult,
 } from "../interfaces/Common.js";
 import { DocumentEmbeddor } from "./DocumentEmbeddor.js";
 import { DocumentExtractor } from "./DocumentExtractor.js";
@@ -122,12 +124,13 @@ export class DocumentsProcessor {
 				.returns<Array<ProcessedDocumentChunk>>();
 
 		console.log(`found ${processedDocChunks?.length} chunks`);
-		const embeddingResult = await DocumentEmbeddor.regenerateEmbeddings(
-			registeredDocument,
-			processedDoc,
-			processedDocChunks!,
-			this.openAi,
-		);
+		const embeddingResult =
+			await DocumentEmbeddor.regenerateEmbeddingsForChunks(
+				registeredDocument,
+				processedDoc,
+				processedDocChunks!,
+				this.openAi,
+			);
 
 		console.log(`regenerated ${embeddingResult.embeddings.length} chunks`);
 
@@ -146,6 +149,44 @@ export class DocumentsProcessor {
 				console.log(data, error);
 			}),
 		);
+
+		return embeddingResult;
+	}
+
+	async regenerateSummaryEmbeddings(
+		registeredDocument: RegisteredDocument,
+	): Promise<SummaryEmbeddingResult> {
+		const { data: processedDoc, error: processedDocError } = await this.supabase
+			.from("processed_documents")
+			.select("*")
+			.eq("registered_document_id", registeredDocument.id)
+			.single<ProcessedDocument>();
+
+		const { data: processedDocSummary, error: processedDocChunksError } =
+			await this.supabase
+				.from("processed_document_summaries")
+				.select("*")
+				.eq("processed_document_id", processedDoc!.id)
+				.single<ProcessedDocumentSummary>();
+
+		const embeddingResult =
+			await DocumentEmbeddor.regenerateEmbeddingsForSummary(
+				registeredDocument,
+				processedDoc,
+				processedDocSummary!,
+				this.openAi,
+			);
+
+		const { data, error } = await this.supabase
+			.from("processed_document_summaries")
+			.update({
+				// The final switch from old embedding to new embedding
+				// can then be done with a database update statement, before / at the same time
+				// the API is updated to also use the new embedding. This way we avoid
+				// that API embeddings and database embeddings are out of sync.
+				summary_embedding_temp: embeddingResult.embedding,
+			})
+			.eq("id", processedDocSummary?.id);
 
 		return embeddingResult;
 	}

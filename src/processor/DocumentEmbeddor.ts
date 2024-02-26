@@ -10,6 +10,8 @@ import {
 	Embedding,
 	RegisteredDocument,
 	ProcessedDocumentChunk,
+	ProcessedDocumentSummary,
+	SummaryEmbeddingResult,
 } from "../interfaces/Common.js";
 
 // Magic token limit assuming we use a model with 16k context token limit
@@ -80,7 +82,7 @@ export class DocumentEmbeddor {
 		} as EmbeddingResult;
 	}
 
-	static async regenerateEmbeddings(
+	static async regenerateEmbeddingsForChunks(
 		registeredDocument: RegisteredDocument,
 		processedDocument: ProcessedDocument,
 		processedDocumentChunks: Array<ProcessedDocumentChunk>,
@@ -118,5 +120,23 @@ export class DocumentEmbeddor {
 			embeddings: embeddings,
 			tokenUsage: totalTokenUsage,
 		} as EmbeddingResult;
+	}
+
+	static async regenerateEmbeddingsForSummary(
+		registeredDocument: RegisteredDocument,
+		processedDocument: ProcessedDocument,
+		processedDocumentSummaries: ProcessedDocumentSummary,
+		openAi: OpenAIApi,
+	): Promise<SummaryEmbeddingResult> {
+		const embeddingRespone = await generateEmbedding(
+			processedDocumentSummaries.summary,
+			openAi,
+		);
+
+		return {
+			summary: processedDocumentSummaries,
+			embedding: embeddingRespone.embedding,
+			tokenUsage: embeddingRespone.tokenUsage,
+		} as SummaryEmbeddingResult;
 	}
 }

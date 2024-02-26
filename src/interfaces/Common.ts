@@ -16,6 +16,12 @@ export interface EmbeddingResult {
 	tokenUsage: number;
 }
 
+export interface SummaryEmbeddingResult {
+	summary: ProcessedDocumentSummary;
+	embedding: Array<number>;
+	tokenUsage: number;
+}
+
 export interface Chunk {
 	content: string;
 	page: number;
@@ -108,3 +114,6 @@ export type ProcessedDocument =
 
 export type ProcessedDocumentChunk =
 	Database["public"]["Tables"]["processed_document_chunks"]["Row"];
+
+export type ProcessedDocumentSummary =
+	Database["public"]["Tables"]["processed_document_summaries"]["Row"];
