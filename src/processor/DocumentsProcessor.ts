@@ -121,9 +121,12 @@ export class DocumentsProcessor {
 				.from("processed_document_chunks")
 				.select("*")
 				.eq("processed_document_id", processedDoc!.id)
+				.is("embedding_temp", null)
 				.returns<Array<ProcessedDocumentChunk>>();
 
-		console.log(`found ${processedDocChunks?.length} chunks`);
+		console.log(
+			`found ${processedDocChunks?.length} chunks withot new embeddings`,
+		);
 		const embeddingResult =
 			await DocumentEmbeddor.regenerateEmbeddingsForChunks(
 				registeredDocument,
@@ -131,8 +134,6 @@ export class DocumentsProcessor {
 				processedDocChunks!,
 				this.openAi,
 			);
-
-		console.log(`regenerated ${embeddingResult.embeddings.length} chunks`);
 
 		await Promise.all(
 			embeddingResult.embeddings.map(async (embedding) => {
@@ -167,28 +168,39 @@ export class DocumentsProcessor {
 				.from("processed_document_summaries")
 				.select("*")
 				.eq("processed_document_id", processedDoc!.id)
-				.single<ProcessedDocumentSummary>();
+				.is("summary_embedding_temp", null)
+				.returns<ProcessedDocumentSummary[]>();
 
-		const embeddingResult =
-			await DocumentEmbeddor.regenerateEmbeddingsForSummary(
-				registeredDocument,
-				processedDoc,
-				processedDocSummary!,
-				this.openAi,
-			);
+		console.log(
+			`found ${(
+				processedDocSummary ?? []
+			).length.toString()} summaries without new embeddings`,
+		);
 
-		const { data, error } = await this.supabase
-			.from("processed_document_summaries")
-			.update({
-				// The final switch from old embedding to new embedding
-				// can then be done with a database update statement, before / at the same time
-				// the API is updated to also use the new embedding. This way we avoid
-				// that API embeddings and database embeddings are out of sync.
-				summary_embedding_temp: embeddingResult.embedding,
-			})
-			.eq("id", processedDocSummary?.id);
+		if (processedDocSummary && processedDocSummary.length > 0) {
+			const summary = processedDocSummary![0];
+			const embeddingResult =
+				await DocumentEmbeddor.regenerateEmbeddingsForSummary(
+					registeredDocument,
+					processedDoc,
+					summary,
+					this.openAi,
+				);
 
-		return embeddingResult;
+			const { data, error } = await this.supabase
+				.from("processed_document_summaries")
+				.update({
+					// The final switch from old embedding to new embedding
+					// can then be done with a database update statement, before / at the same time
+					// the API is updated to also use the new embedding. This way we avoid
+					// that API embeddings and database embeddings are out of sync.
+					summary_embedding_temp: embeddingResult.embedding,
+				})
+				.eq("id", summary.id);
+			return embeddingResult;
+		} else {
+			return { embedding: [], tokenUsage: 0 };
+		}
 	}
 
 	async finish(processedDocument: ProcessedDocument) {

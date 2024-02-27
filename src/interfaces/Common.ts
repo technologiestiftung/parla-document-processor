@@ -17,7 +17,6 @@ export interface EmbeddingResult {
 }
 
 export interface SummaryEmbeddingResult {
-	summary: ProcessedDocumentSummary;
 	embedding: Array<number>;
 	tokenUsage: number;
 }
