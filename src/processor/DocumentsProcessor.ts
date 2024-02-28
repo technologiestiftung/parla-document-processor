@@ -17,6 +17,7 @@ import { DocumentEmbeddor } from "./DocumentEmbeddor.js";
 import { DocumentExtractor } from "./DocumentExtractor.js";
 import { DocumentSummarizor } from "./DocumentSummarizor.js";
 import { DocumentFinder } from "./DocumentFinder.js";
+import { splitArrayEqually } from "../utils/utils.js";
 
 export class DocumentsProcessor {
 	settings: Settings;
@@ -135,21 +136,33 @@ export class DocumentsProcessor {
 				this.openAi,
 			);
 
-		await Promise.all(
-			embeddingResult.embeddings.map(async (embedding) => {
-				const { data, error } = await this.supabase
-					.from("processed_document_chunks")
-					.update({
-						// The final switch from old embedding to new embedding
-						// can then be done with a database update statement, before / at the same time
-						// the API is updated to also use the new embedding. This way we avoid
-						// that API embeddings and database embeddings are out of sync.
-						embedding_temp: embedding.embeddingTemp,
-					})
-					.eq("id", embedding.id);
-				console.log(data, error);
-			}),
+		const embeddingBatchSize = 10;
+		const embeddingBatches = splitArrayEqually(
+			embeddingResult.embeddings,
+			embeddingBatchSize,
 		);
+		console.log(
+			`Uploading ${embeddingResult.embeddings.length} embeddings to db...`,
+		);
+		for (let index = 0; index < embeddingBatches.length; index++) {
+			console.log(`Uploading batch ${index} of ${embeddingBatches.length}...`);
+			const embeddingBatch = embeddingBatches[index];
+			await Promise.all(
+				embeddingBatch.map(async (embedding) => {
+					const { data, error } = await this.supabase
+						.from("processed_document_chunks")
+						.update({
+							// The final switch from old embedding to new embedding
+							// can then be done with a database update statement, before / at the same time
+							// the API is updated to also use the new embedding. This way we avoid
+							// that API embeddings and database embeddings are out of sync.
+							embedding_temp: embedding.embeddingTemp,
+						})
+						.eq("id", embedding.id);
+					console.log(data, error);
+				}),
+			);
+		}
 
 		return embeddingResult;
 	}

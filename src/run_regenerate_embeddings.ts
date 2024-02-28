@@ -21,9 +21,8 @@ const supabase = createClient(
 
 let { data, error } = await supabase
 	.from("registered_documents")
-	.select(
-		"id, source_url, source_type, registered_at, metadata, processed_documents(*)",
-	)
+	.select("id, source_url, source_type, registered_at, metadata")
+	.order("id", { ascending: false })
 	.returns<Array<RegisteredDocument>>();
 
 const documentsToProcess = data!.slice(

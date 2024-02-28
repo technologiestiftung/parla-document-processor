@@ -2,7 +2,11 @@ import { ProcessedDocument } from "./../interfaces/Common";
 import fs from "fs";
 import { OpenAIApi } from "openai";
 import { generateEmbedding } from "../utils/OpenAiUtils.js";
-import { enc, splitInChunksAccordingToTokenLimit } from "../utils/utils.js";
+import {
+	enc,
+	splitArrayEqually,
+	splitInChunksAccordingToTokenLimit,
+} from "../utils/utils.js";
 import {
 	ExtractionResult,
 	EmbeddingResult,
@@ -88,18 +92,32 @@ export class DocumentEmbeddor {
 		processedDocumentChunks: Array<ProcessedDocumentChunk>,
 		openAi: OpenAIApi,
 	): Promise<EmbeddingResult> {
-		const chunkEmbeddings = await Promise.all(
-			processedDocumentChunks.map(async (chunk) => {
-				const embeddingRespone = await generateEmbedding(chunk.content, openAi);
-				return {
-					...chunk,
-					embedding: [], // not used
-					embeddingTemp: embeddingRespone, // newly generated embedding
-				};
-			}),
+		const batchSize = 5;
+		const batches = splitArrayEqually(processedDocumentChunks, batchSize);
+		console.log(
+			`generating embeddings for ${processedDocumentChunks.length} chunks in ${batches.length} of size ${batchSize}...`,
 		);
+		let allEmbeddings: Array<any> = [];
+		for (let index = 0; index < batches.length; index++) {
+			const chunkBatch = batches[index];
+			const chunkEmbeddings = await Promise.all(
+				chunkBatch.map(async (chunk) => {
+					const embeddingRespone = await generateEmbedding(
+						chunk.content,
+						openAi,
+					);
+					return {
+						...chunk,
+						embedding: [], // not used
+						embeddingTemp: embeddingRespone, // newly generated embedding
+					};
+				}),
+			);
+			allEmbeddings = allEmbeddings.concat(chunkEmbeddings);
+			console.log(`generated ${allEmbeddings.length} embeddings...`);
+		}
 
-		const embeddings = chunkEmbeddings.map((emb) => {
+		const embeddings = allEmbeddings.map((emb) => {
 			return {
 				id: emb.id,
 				content: emb.content,
@@ -110,7 +128,7 @@ export class DocumentEmbeddor {
 			} as Embedding;
 		});
 
-		const totalTokenUsage = chunkEmbeddings
+		const totalTokenUsage = allEmbeddings
 			.map((chunk) => chunk.embeddingTemp.tokenUsage)
 			.reduce((total, num) => total + num, 0);
 
