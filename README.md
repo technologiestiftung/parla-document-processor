@@ -31,19 +31,17 @@ This repository contains scripts for pre-processing PDF files for later use in t
   - For each chunk in `processed_document_chunks`, generate embedding with the (new) model set in env variable `OPENAI_EMBEDDING_MODEL` and store in column `embedding_temp`.
   - For each summary in `processed_document_summaries`, generate embedding with the (new) model set in env variable `OPENAI_EMBEDDING_MODEL` and store in column `summary_embedding_temp`.
   - After doing so, the API (https://github.com/technologiestiftung/parla-api) must be changed to use the new model as well.
-  - The final migration must happen simultaneously with the API changes by swapping the content of the columns:
+  - The final migration must happen simultaneously with the API changes by renaming the columns:
     ```
-    UPDATE processed_document_summaries
-    SET
-        summary_embedding = summary_embedding_temp,
-        summary_embedding_temp = summary_embedding;
+    ALTER TABLE processed_document_chunks rename column embedding to embedding_old;
+    ALTER TABLE processed_document_chunks rename column embedding_temp to embedding;
+    ALTER TABLE processed_document_chunks rename column embedding_old to embedding_temp;
     ```
     and
     ```
-    UPDATE processed_document_chunks
-    SET
-        embedding = embedding_temp,
-        embedding_temp = embedding;
+    ALTER TABLE processed_document_summaries rename column summary_embedding to summary_embedding_old;
+    ALTER TABLE processed_document_summaries rename column summary_embedding_temp to summary_embedding;
+    ALTER TABLE processed_document_summaries rename column summary_embedding_old to summary_embedding_temp;
     ```
   - After swapping the columns, the indices must be regenerated, see section [**Periodically regenerate indices**]
 
