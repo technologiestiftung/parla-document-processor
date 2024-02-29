@@ -5,15 +5,19 @@ import {
 	EmbeddingResult,
 	ExtractRequest,
 	ExtractionResult,
-	ProcessedDocument,
 	RegisteredDocument,
+	ProcessedDocumentChunk,
+	ProcessedDocument,
 	Settings,
 	SummarizeResult,
+	ProcessedDocumentSummary,
+	SummaryEmbeddingResult,
 } from "../interfaces/Common.js";
 import { DocumentEmbeddor } from "./DocumentEmbeddor.js";
 import { DocumentExtractor } from "./DocumentExtractor.js";
 import { DocumentSummarizor } from "./DocumentSummarizor.js";
 import { DocumentFinder } from "./DocumentFinder.js";
+import { splitArrayEqually } from "../utils/utils.js";
 
 export class DocumentsProcessor {
 	settings: Settings;
@@ -70,14 +74,12 @@ export class DocumentsProcessor {
 			extractionResult,
 			this.openAi,
 		);
-		const { data, error } = await this.supabase
-			.from("processed_document_summaries")
-			.insert({
-				summary: summary.summary,
-				summary_embedding: summary.embedding,
-				tags: summary.tags,
-				processed_document_id: summary.processedDocument.id,
-			});
+		await this.supabase.from("processed_document_summaries").insert({
+			summary: summary.summary,
+			summary_embedding: summary.embedding,
+			tags: summary.tags,
+			processed_document_id: summary.processedDocument.id,
+		});
 		return summary;
 	}
 
@@ -87,25 +89,126 @@ export class DocumentsProcessor {
 			this.openAi,
 		);
 
-		const { data, error } = await this.supabase
-			.from("processed_document_chunks")
-			.insert(
-				embeddingResult.embeddings.map((e) => {
-					return {
-						content: e.content,
-						embedding: e.embedding,
-						page: e.page,
-						chunk_index: e.chunkIndex,
-						processed_document_id: embeddingResult.processedDocument.id,
-					};
-				}),
-			);
+		await this.supabase.from("processed_document_chunks").insert(
+			embeddingResult.embeddings.map((e) => {
+				return {
+					content: e.content,
+					embedding: e.embedding,
+					page: e.page,
+					chunk_index: e.chunkIndex,
+					processed_document_id: embeddingResult.processedDocument.id,
+				};
+			}),
+		);
 
 		return embeddingResult;
 	}
 
+	async regenerateChunksEmbeddings(
+		registeredDocument: RegisteredDocument,
+	): Promise<EmbeddingResult> {
+		const { data: processedDoc } = await this.supabase
+			.from("processed_documents")
+			.select("*")
+			.eq("registered_document_id", registeredDocument.id)
+			.single<ProcessedDocument>();
+
+		const { data: processedDocChunks } = await this.supabase
+			.from("processed_document_chunks")
+			.select("*")
+			.eq("processed_document_id", processedDoc!.id)
+			.is("embedding_temp", null)
+			.returns<Array<ProcessedDocumentChunk>>();
+
+		console.log(
+			`found ${processedDocChunks?.length} chunks withot new embeddings`,
+		);
+		const embeddingResult =
+			await DocumentEmbeddor.regenerateEmbeddingsForChunks(
+				registeredDocument,
+				processedDoc,
+				processedDocChunks!,
+				this.openAi,
+			);
+
+		const embeddingBatchSize = 10;
+		const embeddingBatches = splitArrayEqually(
+			embeddingResult.embeddings,
+			embeddingBatchSize,
+		);
+		console.log(
+			`Uploading ${embeddingResult.embeddings.length} embeddings to db...`,
+		);
+		for (let index = 0; index < embeddingBatches.length; index++) {
+			console.log(`Uploading batch ${index} of ${embeddingBatches.length}...`);
+			const embeddingBatch = embeddingBatches[index];
+			await Promise.all(
+				embeddingBatch.map(async (embedding) => {
+					await this.supabase
+						.from("processed_document_chunks")
+						.update({
+							// The final switch from old embedding to new embedding
+							// can then be done with a database update statement, before / at the same time
+							// the API is updated to also use the new embedding. This way we avoid
+							// that API embeddings and database embeddings are out of sync.
+							embedding_temp: embedding.embeddingTemp,
+						})
+						.eq("id", embedding.id);
+				}),
+			);
+		}
+
+		return embeddingResult;
+	}
+
+	async regenerateSummaryEmbeddings(
+		registeredDocument: RegisteredDocument,
+	): Promise<SummaryEmbeddingResult> {
+		const { data: processedDoc } = await this.supabase
+			.from("processed_documents")
+			.select("*")
+			.eq("registered_document_id", registeredDocument.id)
+			.single<ProcessedDocument>();
+
+		const { data: processedDocSummary } = await this.supabase
+			.from("processed_document_summaries")
+			.select("*")
+			.eq("processed_document_id", processedDoc!.id)
+			.is("summary_embedding_temp", null)
+			.returns<ProcessedDocumentSummary[]>();
+
+		console.log(
+			`found ${(
+				processedDocSummary ?? []
+			).length.toString()} summaries without new embeddings`,
+		);
+
+		if (processedDocSummary && processedDocSummary.length > 0) {
+			const summary = processedDocSummary![0];
+			const embeddingResult =
+				await DocumentEmbeddor.regenerateEmbeddingsForSummary(
+					summary,
+					this.openAi,
+				);
+
+			await this.supabase
+				.from("processed_document_summaries")
+				.update({
+					// The final switch from old embedding to new embedding
+					// can then be done with a database update statement, before / at the same time
+					// the API is updated to also use the new embedding. This way we avoid
+					// that API embeddings and database embeddings are out of sync.
+					summary_embedding_temp: embeddingResult.embedding,
+				})
+				.eq("id", summary.id);
+			return embeddingResult;
+		} else {
+			return { embedding: [], tokenUsage: 0 };
+		}
+	}
+
 	async finish(processedDocument: ProcessedDocument) {
-		const { data, error } = await this.supabase
+		await this.supabase
 			.from("processed_documents")
 			.update({ processing_finished_at: new Date() })
 			.eq("id", processedDocument.id);
@@ -115,7 +218,7 @@ export class DocumentsProcessor {
 		processedDocument: ProcessedDocument,
 		errorMessage: string,
 	) {
-		const { data, error } = await this.supabase
+		await this.supabase
 			.from("processed_documents")
 			.update({
 				processing_finished_at: new Date(),

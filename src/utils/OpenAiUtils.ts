@@ -24,7 +24,7 @@ export async function generateEmbedding(
 					model: settings.openAiEmbeddingModel,
 					input: content,
 				},
-				{ timeout: 5000 },
+				{ timeout: 10000 },
 			),
 		{
 			startingDelay: 1000,
@@ -151,7 +151,7 @@ export async function generateSummaryForLargeDocument(
 	);
 
 	// Generate summaries in batches (to avoid 429)
-	let batches = splitArrayEqually(maxTokenChunks, 20);
+	let batches = splitArrayEqually(maxTokenChunks, 10);
 	var summaries: Array<OpenAITextResponse> = [];
 	for (let idx = 0; idx < batches.length; idx++) {
 		const batch = batches[idx];
