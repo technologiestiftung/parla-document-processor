@@ -74,14 +74,12 @@ export class DocumentsProcessor {
 			extractionResult,
 			this.openAi,
 		);
-		const { data, error } = await this.supabase
-			.from("processed_document_summaries")
-			.insert({
-				summary: summary.summary,
-				summary_embedding: summary.embedding,
-				tags: summary.tags,
-				processed_document_id: summary.processedDocument.id,
-			});
+		await this.supabase.from("processed_document_summaries").insert({
+			summary: summary.summary,
+			summary_embedding: summary.embedding,
+			tags: summary.tags,
+			processed_document_id: summary.processedDocument.id,
+		});
 		return summary;
 	}
 
@@ -91,19 +89,17 @@ export class DocumentsProcessor {
 			this.openAi,
 		);
 
-		const { data, error } = await this.supabase
-			.from("processed_document_chunks")
-			.insert(
-				embeddingResult.embeddings.map((e) => {
-					return {
-						content: e.content,
-						embedding: e.embedding,
-						page: e.page,
-						chunk_index: e.chunkIndex,
-						processed_document_id: embeddingResult.processedDocument.id,
-					};
-				}),
-			);
+		await this.supabase.from("processed_document_chunks").insert(
+			embeddingResult.embeddings.map((e) => {
+				return {
+					content: e.content,
+					embedding: e.embedding,
+					page: e.page,
+					chunk_index: e.chunkIndex,
+					processed_document_id: embeddingResult.processedDocument.id,
+				};
+			}),
+		);
 
 		return embeddingResult;
 	}
@@ -111,19 +107,18 @@ export class DocumentsProcessor {
 	async regenerateChunksEmbeddings(
 		registeredDocument: RegisteredDocument,
 	): Promise<EmbeddingResult> {
-		const { data: processedDoc, error: processedDocError } = await this.supabase
+		const { data: processedDoc } = await this.supabase
 			.from("processed_documents")
 			.select("*")
 			.eq("registered_document_id", registeredDocument.id)
 			.single<ProcessedDocument>();
 
-		const { data: processedDocChunks, error: processedDocChunksError } =
-			await this.supabase
-				.from("processed_document_chunks")
-				.select("*")
-				.eq("processed_document_id", processedDoc!.id)
-				.is("embedding_temp", null)
-				.returns<Array<ProcessedDocumentChunk>>();
+		const { data: processedDocChunks } = await this.supabase
+			.from("processed_document_chunks")
+			.select("*")
+			.eq("processed_document_id", processedDoc!.id)
+			.is("embedding_temp", null)
+			.returns<Array<ProcessedDocumentChunk>>();
 
 		console.log(
 			`found ${processedDocChunks?.length} chunks withot new embeddings`,
@@ -149,7 +144,7 @@ export class DocumentsProcessor {
 			const embeddingBatch = embeddingBatches[index];
 			await Promise.all(
 				embeddingBatch.map(async (embedding) => {
-					const { data, error } = await this.supabase
+					await this.supabase
 						.from("processed_document_chunks")
 						.update({
 							// The final switch from old embedding to new embedding
@@ -159,7 +154,6 @@ export class DocumentsProcessor {
 							embedding_temp: embedding.embeddingTemp,
 						})
 						.eq("id", embedding.id);
-					console.log(data, error);
 				}),
 			);
 		}
@@ -170,19 +164,18 @@ export class DocumentsProcessor {
 	async regenerateSummaryEmbeddings(
 		registeredDocument: RegisteredDocument,
 	): Promise<SummaryEmbeddingResult> {
-		const { data: processedDoc, error: processedDocError } = await this.supabase
+		const { data: processedDoc } = await this.supabase
 			.from("processed_documents")
 			.select("*")
 			.eq("registered_document_id", registeredDocument.id)
 			.single<ProcessedDocument>();
 
-		const { data: processedDocSummary, error: processedDocChunksError } =
-			await this.supabase
-				.from("processed_document_summaries")
-				.select("*")
-				.eq("processed_document_id", processedDoc!.id)
-				.is("summary_embedding_temp", null)
-				.returns<ProcessedDocumentSummary[]>();
+		const { data: processedDocSummary } = await this.supabase
+			.from("processed_document_summaries")
+			.select("*")
+			.eq("processed_document_id", processedDoc!.id)
+			.is("summary_embedding_temp", null)
+			.returns<ProcessedDocumentSummary[]>();
 
 		console.log(
 			`found ${(
@@ -194,13 +187,11 @@ export class DocumentsProcessor {
 			const summary = processedDocSummary![0];
 			const embeddingResult =
 				await DocumentEmbeddor.regenerateEmbeddingsForSummary(
-					registeredDocument,
-					processedDoc,
 					summary,
 					this.openAi,
 				);
 
-			const { data, error } = await this.supabase
+			await this.supabase
 				.from("processed_document_summaries")
 				.update({
 					// The final switch from old embedding to new embedding
@@ -217,7 +208,7 @@ export class DocumentsProcessor {
 	}
 
 	async finish(processedDocument: ProcessedDocument) {
-		const { data, error } = await this.supabase
+		await this.supabase
 			.from("processed_documents")
 			.update({ processing_finished_at: new Date() })
 			.eq("id", processedDocument.id);
@@ -227,7 +218,7 @@ export class DocumentsProcessor {
 		processedDocument: ProcessedDocument,
 		errorMessage: string,
 	) {
-		const { data, error } = await this.supabase
+		await this.supabase
 			.from("processed_documents")
 			.update({
 				processing_finished_at: new Date(),

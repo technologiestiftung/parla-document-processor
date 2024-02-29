@@ -1,4 +1,3 @@
-import { ProcessedDocument } from "./../interfaces/Common";
 import fs from "fs";
 import { OpenAIApi } from "openai";
 import { generateEmbedding } from "../utils/OpenAiUtils.js";
@@ -16,6 +15,7 @@ import {
 	ProcessedDocumentChunk,
 	ProcessedDocumentSummary,
 	SummaryEmbeddingResult,
+	ProcessedDocument,
 } from "../interfaces/Common.js";
 
 // Magic token limit assuming we use a model with 16k context token limit
@@ -141,8 +141,6 @@ export class DocumentEmbeddor {
 	}
 
 	static async regenerateEmbeddingsForSummary(
-		registeredDocument: RegisteredDocument,
-		processedDocument: ProcessedDocument,
 		processedDocumentSummaries: ProcessedDocumentSummary,
 		openAi: OpenAIApi,
 	): Promise<SummaryEmbeddingResult> {
