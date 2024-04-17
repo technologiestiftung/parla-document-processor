@@ -1,5 +1,5 @@
+import { OpenAI } from "openai";
 import { SupabaseClient, createClient } from "@supabase/supabase-js";
-import { Configuration, OpenAIApi } from "openai";
 import postgres from "postgres";
 import {
 	EmbeddingResult,
@@ -19,7 +19,7 @@ export class DocumentsProcessor {
 	settings: Settings;
 	sql: postgres.Sql<{}>;
 	supabase: SupabaseClient<any, "public", any>;
-	openAi: OpenAIApi;
+	openAi: OpenAI;
 
 	constructor(settings: Settings) {
 		this.settings = settings;
@@ -28,11 +28,7 @@ export class DocumentsProcessor {
 			settings.supabaseUrl,
 			settings.supabaseServiceRoleKey,
 		);
-		this.openAi = new OpenAIApi(
-			new Configuration({
-				apiKey: settings.openaAiApiKey,
-			}),
-		);
+		this.openAi = new OpenAI({ apiKey: settings.openaAiApiKey });
 	}
 
 	async find(): Promise<Array<RegisteredDocument>> {
@@ -49,7 +45,7 @@ export class DocumentsProcessor {
 			this.settings,
 		);
 
-		const { data } = await this.supabase
+		const { data, error } = await this.supabase
 			.from("processed_documents")
 			.insert({
 				file_checksum: extractionResult.checksum,
@@ -59,6 +55,8 @@ export class DocumentsProcessor {
 				registered_document_id: extractionResult.document.id,
 			})
 			.select("*");
+
+		console.log(error);
 
 		return { ...extractionResult, processedDocument: data![0] };
 	}
@@ -78,6 +76,7 @@ export class DocumentsProcessor {
 				tags: summary.tags,
 				processed_document_id: summary.processedDocument.id,
 			});
+		console.log(error);
 		return summary;
 	}
 
@@ -101,6 +100,8 @@ export class DocumentsProcessor {
 				}),
 			);
 
+		console.log(error);
+
 		return embeddingResult;
 	}
 
@@ -109,6 +110,8 @@ export class DocumentsProcessor {
 			.from("processed_documents")
 			.update({ processing_finished_at: new Date() })
 			.eq("id", processedDocument.id);
+
+		console.log(error);
 	}
 
 	async finishWithError(
@@ -122,5 +125,7 @@ export class DocumentsProcessor {
 				processing_error: errorMessage,
 			})
 			.eq("id", processedDocument.id);
+
+		console.log(error);
 	}
 }

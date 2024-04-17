@@ -82,7 +82,7 @@ export class DocumentSummarizor {
 			processedDocument: extractionResult.processedDocument!,
 			summary: summary!.result,
 			embedding: embeddingResponse.embedding,
-			tags: tagsResponse.tags,
+			tags: tagsResponse.tags.tags,
 			pagesPath: extractionResult.pagesPath,
 			embeddingTokens: embeddingResponse.tokenUsage,
 			inputTokens: summary!.inputTokens,
