@@ -4,19 +4,14 @@ import {
 	RegisteredDocument,
 	Settings,
 } from "../interfaces/Common.js";
+import { fetchAllRegisteredDocuments } from "../utils/utils.js";
 
 export class DocumentFinder {
 	static async find(
 		supabase: SupabaseClient<any, "public", any>,
 		settings: Settings,
 	): Promise<Array<RegisteredDocument>> {
-		let { data, error } = await supabase
-			.from("registered_documents")
-			.select(
-				"id, source_url, source_type, registered_at, metadata, processed_documents(*)",
-			);
-
-		console.log(data?.length, error);
+		const data = await fetchAllRegisteredDocuments(supabase);
 
 		// First: cleanup unsuccessfully processed documents
 		if (settings.allowDeletion) {
@@ -49,11 +44,13 @@ export class DocumentFinder {
 			);
 		}
 
-		let { data: updatedData, error: updatedError } = await supabase
-			.from("registered_documents")
-			.select(
-				"id, source_url, source_type, registered_at, metadata, processed_documents(*)",
+		let updatedData = data;
+		if (settings.allowDeletion) {
+			const updatedDataAfterDeletion = await fetchAllRegisteredDocuments(
+				supabase,
 			);
+			updatedData = updatedDataAfterDeletion ?? [];
+		}
 
 		const unprocessedRegisteredDocuments = (updatedData ?? []).filter((d) => {
 			const unprocessed = d.processed_documents.length === 0;

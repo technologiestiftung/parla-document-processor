@@ -1,5 +1,5 @@
+import { OpenAI } from "openai";
 import { SupabaseClient, createClient } from "@supabase/supabase-js";
-import { Configuration, OpenAIApi } from "openai";
 import postgres from "postgres";
 import {
 	EmbeddingResult,
@@ -19,7 +19,7 @@ export class DocumentsProcessor {
 	settings: Settings;
 	sql: postgres.Sql<{}>;
 	supabase: SupabaseClient<any, "public", any>;
-	openAi: OpenAIApi;
+	openAi: OpenAI;
 
 	constructor(settings: Settings) {
 		this.settings = settings;
@@ -28,11 +28,7 @@ export class DocumentsProcessor {
 			settings.supabaseUrl,
 			settings.supabaseServiceRoleKey,
 		);
-		this.openAi = new OpenAIApi(
-			new Configuration({
-				apiKey: settings.openaAiApiKey,
-			}),
-		);
+		this.openAi = new OpenAI({ apiKey: settings.openaAiApiKey });
 	}
 
 	async find(): Promise<Array<RegisteredDocument>> {
@@ -49,7 +45,7 @@ export class DocumentsProcessor {
 			this.settings,
 		);
 
-		const { data } = await this.supabase
+		const { data, error } = await this.supabase
 			.from("processed_documents")
 			.insert({
 				file_checksum: extractionResult.checksum,
@@ -59,6 +55,10 @@ export class DocumentsProcessor {
 				registered_document_id: extractionResult.document.id,
 			})
 			.select("*");
+
+		if (error) {
+			throw new Error(`Error inserting processed document: ${error.message}`);
+		}
 
 		return { ...extractionResult, processedDocument: data![0] };
 	}
@@ -70,7 +70,7 @@ export class DocumentsProcessor {
 			extractionResult,
 			this.openAi,
 		);
-		const { data, error } = await this.supabase
+		const { error } = await this.supabase
 			.from("processed_document_summaries")
 			.insert({
 				summary: summary.summary,
@@ -78,6 +78,13 @@ export class DocumentsProcessor {
 				tags: summary.tags,
 				processed_document_id: summary.processedDocument.id,
 			});
+
+		if (error) {
+			throw new Error(
+				`Error inserting processed document summary: ${error.message}`,
+			);
+		}
+
 		return summary;
 	}
 
@@ -87,7 +94,7 @@ export class DocumentsProcessor {
 			this.openAi,
 		);
 
-		const { data, error } = await this.supabase
+		const { error } = await this.supabase
 			.from("processed_document_chunks")
 			.insert(
 				embeddingResult.embeddings.map((e) => {
@@ -101,26 +108,44 @@ export class DocumentsProcessor {
 				}),
 			);
 
+		if (error) {
+			throw new Error(
+				`Error inserting processed document embeddings: ${error.message}`,
+			);
+		}
+
 		return embeddingResult;
 	}
 
 	async finish(processedDocument: ProcessedDocument) {
-		const { data, error } = await this.supabase
+		const { error } = await this.supabase
 			.from("processed_documents")
 			.update({ processing_finished_at: new Date() })
 			.eq("id", processedDocument.id);
+
+		if (error) {
+			throw new Error(
+				`Error updating finished processed document: ${error.message}`,
+			);
+		}
 	}
 
 	async finishWithError(
 		processedDocument: ProcessedDocument,
 		errorMessage: string,
 	) {
-		const { data, error } = await this.supabase
+		const { error } = await this.supabase
 			.from("processed_documents")
 			.update({
 				processing_finished_at: new Date(),
 				processing_error: errorMessage,
 			})
 			.eq("id", processedDocument.id);
+
+		if (error) {
+			throw new Error(
+				`Error updating finished processed document: ${error.message}`,
+			);
+		}
 	}
 }
