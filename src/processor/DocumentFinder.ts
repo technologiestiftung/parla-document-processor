@@ -11,8 +11,6 @@ export class DocumentFinder {
 		supabase: SupabaseClient<any, "public", any>,
 		settings: Settings,
 	): Promise<Array<RegisteredDocument>> {
-		const PAGE_SIZE = 500;
-
 		const data = await fetchAllRegisteredDocuments(supabase);
 
 		// First: cleanup unsuccessfully processed documents
@@ -48,16 +46,9 @@ export class DocumentFinder {
 
 		let updatedData = data;
 		if (settings.allowDeletion) {
-			console.log("Cleanup done. Fetching updated data...");
-			const {
-				data: updatedDataAfterDeletion,
-				error: updatedErrorAfterDeletion,
-			} = await supabase
-				.from("registered_documents")
-				.select(
-					"id, source_url, source_type, registered_at, metadata, processed_documents(*)",
-				);
-
+			const updatedDataAfterDeletion = await fetchAllRegisteredDocuments(
+				supabase,
+			);
 			updatedData = updatedDataAfterDeletion ?? [];
 		}
 

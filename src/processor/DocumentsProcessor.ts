@@ -56,7 +56,9 @@ export class DocumentsProcessor {
 			})
 			.select("*");
 
-		console.log(error);
+		if (error) {
+			throw new Error(`Error inserting processed document: ${error}`);
+		}
 
 		return { ...extractionResult, processedDocument: data![0] };
 	}
@@ -68,7 +70,7 @@ export class DocumentsProcessor {
 			extractionResult,
 			this.openAi,
 		);
-		const { data, error } = await this.supabase
+		const { error } = await this.supabase
 			.from("processed_document_summaries")
 			.insert({
 				summary: summary.summary,
@@ -76,7 +78,11 @@ export class DocumentsProcessor {
 				tags: summary.tags,
 				processed_document_id: summary.processedDocument.id,
 			});
-		console.log(error);
+
+		if (error) {
+			throw new Error(`Error inserting processed document summary: ${error}`);
+		}
+
 		return summary;
 	}
 
@@ -86,7 +92,7 @@ export class DocumentsProcessor {
 			this.openAi,
 		);
 
-		const { data, error } = await this.supabase
+		const { error } = await this.supabase
 			.from("processed_document_chunks")
 			.insert(
 				embeddingResult.embeddings.map((e) => {
@@ -100,25 +106,31 @@ export class DocumentsProcessor {
 				}),
 			);
 
-		console.log(error);
+		if (error) {
+			throw new Error(
+				`Error inserting processed document embeddings: ${error}`,
+			);
+		}
 
 		return embeddingResult;
 	}
 
 	async finish(processedDocument: ProcessedDocument) {
-		const { data, error } = await this.supabase
+		const { error } = await this.supabase
 			.from("processed_documents")
 			.update({ processing_finished_at: new Date() })
 			.eq("id", processedDocument.id);
 
-		console.log(error);
+		if (error) {
+			throw new Error(`Error updating finished processed document: ${error}`);
+		}
 	}
 
 	async finishWithError(
 		processedDocument: ProcessedDocument,
 		errorMessage: string,
 	) {
-		const { data, error } = await this.supabase
+		const { error } = await this.supabase
 			.from("processed_documents")
 			.update({
 				processing_finished_at: new Date(),
@@ -126,6 +138,8 @@ export class DocumentsProcessor {
 			})
 			.eq("id", processedDocument.id);
 
-		console.log(error);
+		if (error) {
+			throw new Error(`Error updating finished processed document: ${error}`);
+		}
 	}
 }
