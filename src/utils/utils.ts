@@ -174,9 +174,7 @@ export async function fetchAllRegisteredDocuments(
 
 		if (pageError) {
 			throw new Error(
-				`Error fetching page ${page + 1} / ${numPages}: ${JSON.stringify(
-					pageError,
-				)}`,
+				`Error fetching page ${page + 1} / ${numPages}: ${pageError.message}`,
 			);
 		}
 	}

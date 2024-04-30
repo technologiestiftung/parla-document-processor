@@ -57,7 +57,7 @@ export class DocumentsProcessor {
 			.select("*");
 
 		if (error) {
-			throw new Error(`Error inserting processed document: ${error}`);
+			throw new Error(`Error inserting processed document: ${error.message}`);
 		}
 
 		return { ...extractionResult, processedDocument: data![0] };
@@ -80,7 +80,9 @@ export class DocumentsProcessor {
 			});
 
 		if (error) {
-			throw new Error(`Error inserting processed document summary: ${error}`);
+			throw new Error(
+				`Error inserting processed document summary: ${error.message}`,
+			);
 		}
 
 		return summary;
@@ -108,7 +110,7 @@ export class DocumentsProcessor {
 
 		if (error) {
 			throw new Error(
-				`Error inserting processed document embeddings: ${error}`,
+				`Error inserting processed document embeddings: ${error.message}`,
 			);
 		}
 
@@ -122,7 +124,9 @@ export class DocumentsProcessor {
 			.eq("id", processedDocument.id);
 
 		if (error) {
-			throw new Error(`Error updating finished processed document: ${error}`);
+			throw new Error(
+				`Error updating finished processed document: ${error.message}`,
+			);
 		}
 	}
 
@@ -139,7 +143,9 @@ export class DocumentsProcessor {
 			.eq("id", processedDocument.id);
 
 		if (error) {
-			throw new Error(`Error updating finished processed document: ${error}`);
+			throw new Error(
+				`Error updating finished processed document: ${error.message}`,
+			);
 		}
 	}
 }
