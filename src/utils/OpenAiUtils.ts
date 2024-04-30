@@ -1,4 +1,4 @@
-import { OpenAIApi } from "openai";
+import { OpenAI } from "openai";
 import { backOff } from "exponential-backoff";
 import {
 	OpenAIEmbeddingResponse,
@@ -15,11 +15,11 @@ import { settings } from "../Settings.js";
 
 export async function generateEmbedding(
 	content: string,
-	openAi: OpenAIApi,
+	openAi: OpenAI,
 ): Promise<OpenAIEmbeddingResponse> {
 	const embeddingResponse = await backOff(
 		async () =>
-			await openAi.createEmbedding(
+			await openAi.embeddings.create(
 				{
 					model: settings.openAiEmbeddingModel,
 					input: content,
@@ -37,22 +37,23 @@ export async function generateEmbedding(
 			},
 		},
 	);
-	const [responseData] = embeddingResponse.data.data;
+	const [responseData] = embeddingResponse.data;
 	return {
 		embedding: responseData.embedding,
-		tokenUsage: embeddingResponse.data.usage.total_tokens,
+		tokenUsage: embeddingResponse.usage.total_tokens,
 	};
 }
 
 export async function generateTags(
 	content: string,
-	openAi: OpenAIApi,
+	openAi: OpenAI,
 ): Promise<OpenAITagsResponse> {
 	const tagSummary = await backOff(
 		async () =>
-			await openAi.createChatCompletion(
+			await openAi.chat.completions.create(
 				{
 					model: settings.openAiModel,
+					response_format: { type: "json_object" },
 					messages: [
 						{
 							role: "system",
@@ -62,11 +63,11 @@ export async function generateTags(
 							Generiere 10 Tags, die das Dokument treffend beschreiben.
 							Konzentriere dich auf die Hauptinhalte.
 							Verändere oder erfinde NIEMALS Fakten, Namen, Berufsbezeichnungen, Zahlen oder Datumsangaben.
-							Antwortformat: Ein syntaktisch gültiges JSON Array. Gebe IMMER nur das JSON Array zurück, ohne weitere Formatierung.`,
+							Antwortformat: Ein syntaktisch gültiges JSON Objekt im Format {tags: ['tag_1', 'tag_2', 'tag_x']}.`,
 						},
 						{
 							role: "user",
-							content: `Extrahiere eine Liste von inhaltlich relevanten Tags aus dem folgenden Dokument: """${content}"""`,
+							content: `Extrahiere eine Liste von inhaltlich relevanten Tags aus dem folgenden Dokument. Gebe ein JSON Objekt im Format {tags: ['tag_1', 'tag_2', 'tag_x']} zurück. Das ist das Dokument: """${content}""" `,
 						},
 					],
 					temperature: 0,
@@ -84,22 +85,22 @@ export async function generateTags(
 		},
 	);
 
-	const tags = JSON.parse(tagSummary.data.choices[0].message?.content ?? "");
+	const tags = JSON.parse(tagSummary.choices[0].message?.content ?? "");
 
 	return {
 		tags: tags,
-		inputTokens: tagSummary.data.usage?.prompt_tokens ?? 0,
-		outputTokens: tagSummary.data.usage?.completion_tokens ?? 0,
+		inputTokens: tagSummary.usage?.prompt_tokens ?? 0,
+		outputTokens: tagSummary.usage?.completion_tokens ?? 0,
 	};
 }
 
 export async function generateSummary(
 	content: string,
-	openAi: OpenAIApi,
+	openAi: OpenAI,
 ): Promise<OpenAITextResponse> {
 	const completeSummary = await backOff(
 		async () =>
-			await openAi.createChatCompletion(
+			await openAi.chat.completions.create(
 				{
 					model: settings.openAiModel,
 					messages: [
@@ -133,15 +134,15 @@ export async function generateSummary(
 	);
 
 	return {
-		result: completeSummary.data.choices[0].message?.content ?? "",
-		inputTokens: completeSummary.data.usage?.prompt_tokens ?? 0,
-		outputTokens: completeSummary.data.usage?.completion_tokens ?? 0,
+		result: completeSummary.choices[0].message?.content ?? "",
+		inputTokens: completeSummary.usage?.prompt_tokens ?? 0,
+		outputTokens: completeSummary.usage?.completion_tokens ?? 0,
 	};
 }
 
 export async function generateSummaryForLargeDocument(
 	completeDocument: string,
-	openAi: OpenAIApi,
+	openAi: OpenAI,
 	allSummaries: Array<OpenAITextResponse> = [],
 ): Promise<OpenAITextResponse> {
 	// Split in chunks where each token count of chunk < MAX_TOKEN_COUNT_FOR_SUMMARY
