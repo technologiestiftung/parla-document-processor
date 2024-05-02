@@ -59,6 +59,9 @@ export class DocumentExtractor {
 			const browser = await puppeteer.launch();
 			const page = await browser.newPage();
 			await page.goto(extractRequest.document.source_url);
+			// Make sure that the page is fully loaded by waiting for network idle and additionally wating for 2 seconds
+			await page.waitForNetworkIdle();
+			await new Promise((r) => setTimeout(r, 2000));
 			await page.pdf({ path: pathToPdf, format: "A4" });
 			await browser.close();
 		} else {
