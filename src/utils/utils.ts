@@ -1,5 +1,4 @@
 import { get_encoding } from "@dqbd/tiktoken";
-import { SupabaseClient } from "@supabase/supabase-js";
 import crypto from "crypto";
 import fs from "fs";
 import { PDFDocument } from "pdf-lib";
@@ -136,52 +135,4 @@ export async function handleError(
 	} else {
 		console.log(`Error: ${e}`);
 	}
-}
-
-export async function fetchAllRegisteredDocuments(
-	supabase: SupabaseClient<any, "public", any>,
-): Promise<Array<any>> {
-	const PAGE_SIZE = 500;
-
-	const { count } = await supabase
-		.from("registered_documents")
-		.select("*", { count: "exact", head: true });
-
-	const rowCount = count ?? 0;
-	console.log(`Total rows in registered_documents: ${rowCount}`);
-
-	const numPages = Math.ceil(rowCount / PAGE_SIZE);
-	const pageArray = Array.from({ length: numPages }, (_, index) => index);
-	console.log(pageArray);
-	let allData: Array<any> = [];
-	for (const page of pageArray) {
-		const { data: pageData, error: pageError } = await supabase
-			.from("registered_documents")
-			.select(
-				"id, source_url, source_type, registered_at, metadata, processed_documents(*)",
-			)
-			.range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
-
-		allData = allData.concat(pageData);
-
-		console.log(
-			`Fetched page ${
-				page + 1
-			} / ${numPages}, rows: ${pageData?.length}, total: ${
-				allData.length
-			} error: ${JSON.stringify(pageError)}`,
-		);
-
-		if (pageError) {
-			throw new Error(
-				`Error fetching page ${page + 1} / ${numPages}: ${pageError.message}`,
-			);
-		}
-	}
-
-	console.log(
-		`Fetched ${pageArray.length} pages with total rows of ${allData.length}.`,
-	);
-
-	return allData;
-}
+}\
