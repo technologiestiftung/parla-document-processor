@@ -135,4 +135,4 @@ export async function handleError(
 	} else {
 		console.log(`Error: ${e}`);
 	}
-}\
+}
