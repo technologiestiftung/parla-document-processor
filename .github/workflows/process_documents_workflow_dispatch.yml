@@ -12,28 +12,32 @@ on:
 
 jobs:
   process_documents:
-    name: parla-process-documents-${{ github.event.inputs.environment }}
-    environment: ${{ github.event.inputs.environment }}
-    runs-on: ubuntu-latest
-    env:
-      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      SUPABASE_DB_CONNECTION: ${{ secrets.SUPABASE_DB_CONNECTION }}
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
-      OPENAI_EMBEDDING_MODEL: ${{ vars.OPENAI_EMBEDDING_MODEL }}
-      PROCESSING_DIR: ${{ vars.PROCESSING_DIR }}
-      ALLOW_DELETION: ${{ vars.ALLOW_DELETION }}
-      MAX_PAGES_LIMIT: ${{ vars.MAX_PAGES_LIMIT }}
-      MAX_DOCUMENTS_TO_PROCESS_IN_ONE_RUN: ${{ vars.MAX_DOCUMENTS_TO_PROCESS_IN_ONE_RUN }}
-      MAX_DOCUMENTS_TO_IMPORT_PER_DOCUMENT_TYPE: ${{ vars.MAX_DOCUMENTS_TO_IMPORT_PER_DOCUMENT_TYPE }}
+    - name: Setup node
+      uses: actions/setup-node@v3
+      with:
+        node-version-file: '.nvmrc'
+    - name: parla-process-documents-${{ github.event.inputs.environment }}
+      environment: ${{ github.event.inputs.environment }}
+      runs-on: ubuntu-latest
+      env:
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        SUPABASE_DB_CONNECTION: ${{ secrets.SUPABASE_DB_CONNECTION }}
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
+        OPENAI_EMBEDDING_MODEL: ${{ vars.OPENAI_EMBEDDING_MODEL }}
+        PROCESSING_DIR: ${{ vars.PROCESSING_DIR }}
+        ALLOW_DELETION: ${{ vars.ALLOW_DELETION }}
+        MAX_PAGES_LIMIT: ${{ vars.MAX_PAGES_LIMIT }}
+        MAX_DOCUMENTS_TO_PROCESS_IN_ONE_RUN: ${{ vars.MAX_DOCUMENTS_TO_PROCESS_IN_ONE_RUN }}
+        MAX_DOCUMENTS_TO_IMPORT_PER_DOCUMENT_TYPE: ${{ vars.MAX_DOCUMENTS_TO_IMPORT_PER_DOCUMENT_TYPE }}
 
-    steps:
-      - name: checkout code
-        uses: actions/checkout@v2
-      - name: preparation
-        run: npm ci && mkdir -p processing_data && curl https://oxzjdwqsmpgqlrziuugr.supabase.co/storage/v1/object/public/assets/deu.traineddata > deu.traineddata && ls -all
-      - name: register documents
-        run: npx tsx ./src/run_import.ts
-      - name: process documents
-        run: export PROCESSING_DIR=$(pwd)/processing_data && npx tsx ./src/run_process.ts
+      steps:
+        - name: checkout code
+          uses: actions/checkout@v2
+        - name: preparation
+          run: npm ci && mkdir -p processing_data && curl https://oxzjdwqsmpgqlrziuugr.supabase.co/storage/v1/object/public/assets/deu.traineddata > deu.traineddata && ls -all
+        - name: register documents
+          run: npx tsx ./src/run_import.ts
+        - name: process documents
+          run: export PROCESSING_DIR=$(pwd)/processing_data && npx tsx ./src/run_process.ts
