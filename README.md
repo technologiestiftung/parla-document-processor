@@ -26,6 +26,25 @@ This repository contains scripts for pre-processing PDF files for later use in t
   4. Generating a list of tags describing the PDF content via OpenAI
   5. Generating embedding vectors of each PDF page via OpenAI
 
+- Regenerate embeddings both for chunks and summaries. This is particularly useful when the used LLM (we use OpenAI) introduces a new embedding model as it happened in January 2024 (https://openai.com/blog/new-embedding-models-and-api-updates). Regenerating the embeddings is done in the `run_regenerate_embeddings.ts` script and performs the following steps:
+
+  - For each chunk in `processed_document_chunks`, generate embedding with the (new) model set in env variable `OPENAI_EMBEDDING_MODEL` and store in column `embedding_temp`.
+  - For each summary in `processed_document_summaries`, generate embedding with the (new) model set in env variable `OPENAI_EMBEDDING_MODEL` and store in column `summary_embedding_temp`.
+  - After doing so, the API (https://github.com/technologiestiftung/parla-api) must be changed to use the new model as well.
+  - The final migration must happen simultaneously with the API changes by renaming the columns:
+    ```
+    ALTER TABLE processed_document_chunks rename column embedding to embedding_old;
+    ALTER TABLE processed_document_chunks rename column embedding_temp to embedding;
+    ALTER TABLE processed_document_chunks rename column embedding_old to embedding_temp;
+    ```
+    and
+    ```
+    ALTER TABLE processed_document_summaries rename column summary_embedding to summary_embedding_old;
+    ALTER TABLE processed_document_summaries rename column summary_embedding_temp to summary_embedding;
+    ALTER TABLE processed_document_summaries rename column summary_embedding_old to summary_embedding_temp;
+    ```
+  - After swapping the columns, the indices must be regenerated, see section [**Periodically regenerate indices**]
+
 ## Limitations
 
 - Only PDF documents are supported
