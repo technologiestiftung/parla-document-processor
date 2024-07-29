@@ -5,12 +5,19 @@ export interface Embedding {
 	embedding: Array<number>;
 	chunkIndex: number;
 	page: number;
+	id: number | undefined;
+	embeddingTemp: Array<number> | undefined;
 }
 
 export interface EmbeddingResult {
 	document: RegisteredDocument;
 	processedDocument: ProcessedDocument;
 	embeddings: Array<Embedding>;
+	tokenUsage: number;
+}
+
+export interface SummaryEmbeddingResult {
+	embedding: Array<number>;
 	tokenUsage: number;
 }
 
@@ -105,3 +112,9 @@ export type RegisteredDocument =
 
 export type ProcessedDocument =
 	Database["public"]["Tables"]["processed_documents"]["Row"];
+
+export type ProcessedDocumentChunk =
+	Database["public"]["Tables"]["processed_document_chunks"]["Row"];
+
+export type ProcessedDocumentSummary =
+	Database["public"]["Tables"]["processed_document_summaries"]["Row"];

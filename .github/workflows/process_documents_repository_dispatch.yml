@@ -25,6 +25,10 @@ jobs:
     steps:
       - name: checkout code
         uses: actions/checkout@v2
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version-file: '.nvmrc'
       - name: preparation
         run: npm ci && mkdir -p processing_data && curl https://oxzjdwqsmpgqlrziuugr.supabase.co/storage/v1/object/public/assets/deu.traineddata > deu.traineddata && ls -all
       - name: register documents
