@@ -1,16 +1,15 @@
+import { get_encoding } from "@dqbd/tiktoken";
 import crypto from "crypto";
 import fs from "fs";
 import { PDFDocument } from "pdf-lib";
-import { get_encoding } from "@dqbd/tiktoken";
 import {
-	SummarizeResult,
 	EmbeddingResult,
-	TokenUsage,
 	ProcessedDocument,
 	RegisteredDocument,
+	SummarizeResult,
+	TokenUsage,
 } from "../interfaces/Common.js";
 import { ExtractError } from "../processor/DocumentExtractor.js";
-import { ProcessingError } from "../processor/DocumentSummarizor.js";
 import { DocumentsProcessor } from "../processor/DocumentsProcessor.js";
 
 export const enc = get_encoding("cl100k_base");

@@ -10,73 +10,41 @@ export class DocumentFinder {
 		supabase: SupabaseClient<any, "public", any>,
 		settings: Settings,
 	): Promise<Array<RegisteredDocument>> {
-		let { data, error } = await supabase
-			.from("registered_documents")
-			.select(
-				"id, source_url, source_type, registered_at, metadata, processed_documents(*)",
-			);
-
-		console.log(data?.length, error);
-
 		// First: cleanup unsuccessfully processed documents
 		if (settings.allowDeletion) {
-			const unsuccessfullyProcessedRegisteredDocuments = (data ?? []).filter(
-				(d) => {
-					const processedButUnsuccessful =
-						d.processed_documents.filter(
-							(pd: ProcessedDocument) =>
-								(pd.processing_started_at && !pd.processing_finished_at) ||
-								!pd.processing_started_at,
-						).length > 0;
+			const {
+				data: processedDocumentsToCleanup,
+				error: processedDocumentsToCleanupError,
+			} = await supabase
+				.rpc("find_registered_documents_with_errors")
+				.select("*");
 
-					return processedButUnsuccessful;
-				},
-			);
-
-			const processedDocumentsToCleanup =
-				unsuccessfullyProcessedRegisteredDocuments.flatMap(
-					(d) => d.processed_documents,
+			if (processedDocumentsToCleanupError) {
+				throw new Error(
+					`Error finding registered documents with errors: ${processedDocumentsToCleanupError.message}`,
 				);
-
-			console.log(
-				`Found ${unsuccessfullyProcessedRegisteredDocuments.length} unsuccessfully processed documents. Cleanup ${processedDocumentsToCleanup.length} processed documents...`,
-			);
+			}
 
 			await Promise.all(
-				processedDocumentsToCleanup.map(async (p) => {
+				(processedDocumentsToCleanup ?? []).map(async (p) => {
 					await supabase.from("processed_documents").delete().eq("id", p.id);
 				}),
 			);
 		}
 
-		let { data: updatedData, error: updatedError } = await supabase
-			.from("registered_documents")
-			.select(
-				"id, source_url, source_type, registered_at, metadata, processed_documents(*)",
+		const { data, error } = await supabase
+			.rpc("find_unprocessed_registered_documents", {})
+			.select("*");
+
+		console.log(data?.length, error);
+
+		if (error) {
+			throw new Error(
+				`Error finding unprocessed registered documents: ${error.message}`,
 			);
+		}
 
-		const unprocessedRegisteredDocuments = (updatedData ?? []).filter((d) => {
-			const unprocessed = d.processed_documents.length === 0;
-
-			const processedButUnsuccessful =
-				d.processed_documents.filter(
-					(pd: ProcessedDocument) =>
-						(pd.processing_started_at && !pd.processing_finished_at) ||
-						!pd.processing_started_at,
-				).length > 0;
-
-			return unprocessed || processedButUnsuccessful;
-		});
-
-		console.log(
-			`Found ${unprocessedRegisteredDocuments.length} unprocessed documents...`,
-		);
-
-		return unprocessedRegisteredDocuments.map((d) => {
-			const document: any = { ...d };
-			delete document.processed_documents;
-			const registeredDocument: RegisteredDocument = { ...document };
-			return registeredDocument;
-		});
+		console.log(`Found ${data.length} unprocessed registered documents.`);
+		return data;
 	}
 }

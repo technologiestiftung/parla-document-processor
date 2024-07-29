@@ -74,7 +74,9 @@ export interface OpenAIEmbeddingResponse {
 }
 
 export interface OpenAITagsResponse {
-	tags: Array<string>;
+	tags: {
+		tags: Array<string>;
+	};
 	inputTokens: number;
 	outputTokens: number;
 }
