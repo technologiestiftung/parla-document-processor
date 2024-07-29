@@ -26,62 +26,6 @@
 		"tsx": "3.12.7",
 		"typescript": "5.1.6"
 	},
-	"eslintConfig": {
-		"env": {
-			"es2021": true,
-			"node": true
-		},
-		"extends": [
-			"eslint:recommended",
-			"plugin:@typescript-eslint/recommended"
-		],
-		"overrides": [
-			{
-				"env": {
-					"node": true
-				},
-				"files": [
-					".eslintrc.{js,cjs}"
-				],
-				"parserOptions": {
-					"sourceType": "script"
-				}
-			}
-		],
-		"parser": "@typescript-eslint/parser",
-		"parserOptions": {
-			"ecmaVersion": "latest",
-			"sourceType": "module"
-		},
-		"plugins": [
-			"@typescript-eslint"
-		],
-		"rules": {
-			"indent": [
-				"error",
-				"tab"
-			],
-			"linebreak-style": [
-				"error",
-				"unix"
-			],
-			"quotes": [
-				"error",
-				"double"
-			],
-			"semi": [
-				"error",
-				"always"
-			]
-		}
-	},
-	"prettier": {
-		"tabWidth": 2,
-		"semi": true,
-		"singleQuote": false,
-		"useTabs": true,
-		"printWidth": 80
-	},
 	"release": {
 		"extends": "@technologiestiftung/semantic-release-config",
 		"npmPublish": false,
@@ -92,20 +36,20 @@
 		]
 	},
 	"dependencies": {
-		"@dqbd/tiktoken": "^1.0.7",
-		"@opendocsg/pdf2md": "^0.1.26",
-		"@supabase/supabase-js": "^2.32.0",
-		"command-line-args": "^5.2.1",
+		"@dqbd/tiktoken": "^1.0.15",
+		"@opendocsg/pdf2md": "0.1.29",
+		"@supabase/supabase-js": "^2.45.0",
+		"command-line-args": "^6.0.0",
 		"exponential-backoff": "3.1.1",
-		"nodejs-file-downloader": "^4.12.1",
-		"openai": "4.36.0",
+		"nodejs-file-downloader": "^4.13.0",
+		"openai": "4.53.2",
 		"pdf-img-convert": "1.2.1",
 		"pdf-lib": "^1.17.1",
 		"pdf-page-counter": "1.0.3",
-		"postgres": "^3.3.5",
+		"postgres": "^3.4.4",
 		"progress": "^2.0.3",
-		"puppeteer": "21.11.0",
-		"tesseract.js": "5.0.4",
+		"puppeteer": "22.14.0",
+		"tesseract.js": "5.1.0",
 		"xml2js": "0.6.2"
 	}
 }
