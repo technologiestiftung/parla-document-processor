@@ -37,19 +37,19 @@
 	},
 	"dependencies": {
 		"@dqbd/tiktoken": "^1.0.15",
-		"@opendocsg/pdf2md": "0.1.29",
+		"@opendocsg/pdf2md": "0.1.31",
 		"@supabase/supabase-js": "^2.45.0",
 		"command-line-args": "^6.0.0",
 		"exponential-backoff": "3.1.1",
 		"nodejs-file-downloader": "^4.13.0",
-		"openai": "4.53.2",
+		"openai": "4.68.1",
 		"pdf-img-convert": "1.2.1",
 		"pdf-lib": "^1.17.1",
 		"pdf-page-counter": "1.0.3",
 		"postgres": "^3.4.4",
 		"progress": "^2.0.3",
-		"puppeteer": "22.14.0",
-		"tesseract.js": "5.1.0",
+		"puppeteer": "22.15.0",
+		"tesseract.js": "5.1.1",
 		"xml2js": "0.6.2"
 	}
 }
