@@ -103,7 +103,8 @@ export class DocumentExtractor {
 			let mdText = "";
 			let ocrText = "";
 
-			mdText = await pdf2md(pdfBuffer, null);
+			// @ts-ignore
+			mdText = await pdf2md(new Uint8Array(pdfBuffer), null);
 
 			// Fallback in case pdf2md fails to extract any text: Convert to Image, use OCR to extract text
 			if (mdText.length < MAGIC_TEXT_TOO_SHORT_LENGTH) {
