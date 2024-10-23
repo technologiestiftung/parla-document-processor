@@ -15,8 +15,8 @@ import {
 } from "../utils/OpenAiUtils.js";
 import { enc } from "../utils/utils.js";
 
-// We use a model with 16k context size, we reserve 1k for the prompt so that we can send ~15k tokens as payload
-export const MAX_TOKEN_COUNT_FOR_SUMMARY = 15000;
+// We use a model with 128k context size, we reserve 1k for the prompt so that we can send ~127k tokens as payload
+export const MAX_TOKEN_COUNT_FOR_SUMMARY = 128000 - 1000;
 
 export class ProcessingError extends Error {
 	document: RegisteredDocument;
