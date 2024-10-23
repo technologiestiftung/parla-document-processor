@@ -78,7 +78,7 @@ export class DocumentExtractor {
 			fs.mkdirSync(pagesFolder);
 		}
 
-		let dataBuffer = fs.readFileSync(pathToPdf);
+		let dataBuffer = fs.readFileSync(pathToPdf, { encoding: "utf8" });
 		const pdfStat = await pdf(dataBuffer);
 		const numPages = pdfStat.numpages;
 		if (numPages > settings.maxPagesLimit) {
@@ -98,7 +98,9 @@ export class DocumentExtractor {
 		for (let idx = 0; idx < pdfPageFiles.length; idx++) {
 			const pdfPageFile = pdfPageFiles[idx];
 			const pdfPage = pdfPageFile.replace(".pdf", "").split("-").slice(-1)[0];
-			const pdfBuffer = fs.readFileSync(`${pagesFolder}/${pdfPageFile}`);
+			const pdfBuffer = fs.readFileSync(`${pagesFolder}/${pdfPageFile}`, {
+				encoding: "utf8",
+			});
 
 			let mdText = "";
 			let ocrText = "";
@@ -113,7 +115,7 @@ export class DocumentExtractor {
 					height: MAGIC_OCR_HEIGHT,
 				});
 				const pdfImagePage = pdfPageFile.replace(".pdf", ".png");
-				fs.writeFileSync(pdfImagePage, image[0]);
+				fs.writeFileSync(pdfImagePage, image[0], { encoding: "utf8" });
 				const extractionResult = await worker.recognize(pdfImagePage);
 				fs.rmSync(pdfImagePage);
 				ocrText = extractionResult.data.text;
@@ -122,7 +124,7 @@ export class DocumentExtractor {
 			let text = mdText.length < 32 ? ocrText : mdText;
 			let outputFile = `${pagesFolder}/${filenameWithoutExtension}-${pdfPage}.md`;
 			let outPath = path.resolve(outputFile);
-			fs.writeFileSync(outPath, text);
+			fs.writeFileSync(outPath, text, { encoding: "utf8" });
 
 			extractedFiles.push({
 				page: parseInt(pdfPage),

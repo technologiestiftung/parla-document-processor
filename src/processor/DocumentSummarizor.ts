@@ -49,7 +49,7 @@ export class DocumentSummarizor {
 			markdownFiles.map(async (mf) => {
 				const markdownText = fs.readFileSync(
 					`${extractionResult.pagesPath}/${mf}`,
-					"utf-8",
+					{ encoding: "utf8" },
 				);
 				return markdownText;
 			}),
