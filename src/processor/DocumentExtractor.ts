@@ -78,7 +78,7 @@ export class DocumentExtractor {
 			fs.mkdirSync(pagesFolder);
 		}
 
-		let dataBuffer = fs.readFileSync(pathToPdf, { encoding: "utf8" });
+		let dataBuffer = fs.readFileSync(pathToPdf);
 		const pdfStat = await pdf(dataBuffer);
 		const numPages = pdfStat.numpages;
 		if (numPages > settings.maxPagesLimit) {
@@ -98,9 +98,7 @@ export class DocumentExtractor {
 		for (let idx = 0; idx < pdfPageFiles.length; idx++) {
 			const pdfPageFile = pdfPageFiles[idx];
 			const pdfPage = pdfPageFile.replace(".pdf", "").split("-").slice(-1)[0];
-			const pdfBuffer = fs.readFileSync(`${pagesFolder}/${pdfPageFile}`, {
-				encoding: "utf8",
-			});
+			const pdfBuffer = fs.readFileSync(`${pagesFolder}/${pdfPageFile}`);
 
 			let mdText = "";
 			let ocrText = "";
