@@ -66,7 +66,8 @@ for (let idx = 0; idx < batches.length; idx++) {
 			}
 		}),
 	);
-	clearDirectory(settings.processingDirectory);
+	console.log(settings.processingDirectory);
+	// clearDirectory(settings.processingDirectory);
 }
 
 // Attention:
