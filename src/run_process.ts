@@ -66,21 +66,20 @@ for (let idx = 0; idx < batches.length; idx++) {
 			}
 		}),
 	);
-	console.log(settings.processingDirectory);
-	// clearDirectory(settings.processingDirectory);
+	clearDirectory(settings.processingDirectory);
 }
 
 // Attention:
 // Upon arrival of new data, the indices on database tables must be regenerated.
 // This can be done periodically by defining cron jobs in the database using pg_cron.
 
-// OpenAI pricing
-// $0.0001 / 1K tokens ada v2 embedding
-// gpt-3.5-turbo-1106	$0.0010 / 1K tokens input	$0.0020 / 1K tokens output
+// OpenAI pricing: https://openai.com/api/pricing/
+// $0.100 / 1M tokens tokens ada v2 embedding
+// gpt-4o-mini $0.150 / 1M input tokens, $0.600 / 1M output tokens
 const estimatedCost =
-	0.0001 * (embeddingTokenCount / 1000) +
-	0.001 * (inputTokenCount / 1000) +
-	0.002 * (outputTokenCount / 1000);
+	0.1 * (embeddingTokenCount / 1_000_000) +
+	0.15 * (inputTokenCount / 1_000_000) +
+	0.6 * (outputTokenCount / 1_000_000);
 
 console.log(
 	`Processing finished with inputTokens=${inputTokenCount} and outputTokens = ${outputTokenCount} and embeddingTokens = ${embeddingTokenCount} and estimatedCost = ${estimatedCost}$`,
