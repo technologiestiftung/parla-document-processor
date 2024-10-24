@@ -10,10 +10,11 @@
 
 This repository contains scripts for pre-processing PDF files for later use in the explorational project _Parla_. It offers a generic way of importing / registering and processing PDF documents. For the use case of _Parla_, the publicly accessible PDF documents of "Schriftliche Anfragen" and "Hauptausschussprotokolle" are used.
 
-## Prerequisites
+## Prerequisites / External Services
 
 - Running and accessible Supabase database with the schema defined in https://github.com/technologiestiftung/parla-api
-- OpenAI API Key
+- [OpenAI](https://platform.openai.com/docs/overview) account and API key
+- [LLamaParse](https://docs.llamaindex.ai/en/stable/llama_cloud/llama_parse/) account and API key
 
 ## Features
 
@@ -21,7 +22,7 @@ This repository contains scripts for pre-processing PDF files for later use in t
 - Process registered documents by
 
   1. Downloading the PDF
-  2. Extracting text content from the PDF (either directly or via **OCR**)
+  2. Extracting text (Markdown) content from the PDF via [LLamaParse API](https://docs.llamaindex.ai/en/stable/llama_cloud/llama_parse/)
   3. Generating a summary of the PDF content via OpenAI
   4. Generating a list of tags describing the PDF content via OpenAI
   5. Generating embedding vectors of each PDF page via OpenAI
@@ -49,8 +50,6 @@ This repository contains scripts for pre-processing PDF files for later use in t
 
 - Only PDF documents are supported
 - The download URL of the documents must be publicly accessible
-- Documents with > 100 pages will not be processed (set via environment variable)
-- Documents with a content length of > 15000 tokens will not be summarized (set via environment variable)
 
 ## Environment variables
 
@@ -67,6 +66,7 @@ PROCESSING_DIR=. // Directory for storing temporary processing files
 ALLOW_DELETION=false // Documents with missing embeddings will not be deleted from the database
 MAX_PAGES_LIMIT=64 // Documents with more pages than this will not be processed
 MAX_DOCUMENTS_TO_PROCESS=1000 // A maximum number of documents to process
+LLAMA_PARSE_TOKEN= // The API token of the [LLamaParse API](https://docs.llamaindex.ai/en/stable/llama_cloud/llama_parse/)
 ```
 
 ## Run locally

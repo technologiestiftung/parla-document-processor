@@ -34,10 +34,7 @@ export class DocumentEmbeddor {
 		for (let idx = 0; idx < extractionResult.extractedFiles.length; idx++) {
 			const mdFile = extractionResult.extractedFiles[idx];
 
-			const markdownData = fs
-				.readFileSync(mdFile.path, "utf8")
-				.replace(/\n/g, " ")
-				.replace(/\0/g, " ");
+			const markdownData = fs.readFileSync(mdFile.path, { encoding: "utf8" });
 
 			const chunksOnThisPage = splitInChunksAccordingToTokenLimit(
 				markdownData,

@@ -73,7 +73,7 @@ export async function generateTags(
 					temperature: 0,
 					stream: false,
 				},
-				{ timeout: 10000 },
+				{ timeout: 100000 },
 			),
 		{
 			startingDelay: 1000,
@@ -108,20 +108,20 @@ export async function generateSummary(
 							role: "system",
 							content: `
 							Du bist ein politischer Dokumenten-Assistent, der Inhalte versteht und zusammenfasst.
-							Erhalte ein durch """ abgegrenztes Dokument.
-							Die Zusammenfassung soll inhaltlich prägnant sein.
-							Verändere oder erfinde NIEMALS Fakten, Namen, Berufsbezeichnungen, Zahlen oder Datumsangaben.
-							Begrenze die Zusammenfassung auf maximal 100 Wörter`,
+							Die Zusammenfassung sollte alle wichtigen Punkte und Hauptgedanken des Originaltexts abdecken und die Informationen gleichzeitig in ein prägnantes und leicht verständliches Format bringen.
+							Bitte stelle sicher, dass die Zusammenfassung relevante Details und Beispiele enthält, die die Hauptgedanken unterstützen, und vermeide gleichzeitig unnötige Informationen oder Wiederholungen.
+							Die Länge der Zusammenfassung sollte der Länge und Komplexität des Originaltexts angemessen sein und einen klaren und genauen Überblick bieten, ohne wichtige Informationen auszulassen.
+							Verändere oder erfinde NIEMALS Fakten, Namen, Berufsbezeichnungen, Zahlen oder Datumsangaben.`,
 						},
 						{
 							role: "user",
-							content: `Fasse das folgende Dokument in 100 Worten zusammen: """${content}"""`,
+							content: `Fasse das folgende Dokument zusammen: """${content}"""`,
 						},
 					],
 					temperature: 0,
 					stream: false,
 				},
-				{ timeout: 10000 },
+				{ timeout: 100000 },
 			),
 		{
 			startingDelay: 1000,
