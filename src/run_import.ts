@@ -7,15 +7,15 @@ import { TestResourcesImporter } from "./importers/TestResources/TestResourcesIm
 
 console.log(settings);
 
-// const schrAnfrImporter = new SchrAnfrImporter(settings);
+const schrAnfrImporter = new SchrAnfrImporter(settings);
 // const redNumbersImporter = new RedNumberImporter(settings);
 // const webResourcesImporter = new WebResourcesImporter(settings);
-const testResourcesImporter = new TestResourcesImporter(settings);
+// const testResourcesImporter = new TestResourcesImporter(settings);
 const importer = new Importer([
-	// schrAnfrImporter,
+	schrAnfrImporter,
 	// redNumbersImporter,
 	// webResourcesImporter,
-	testResourcesImporter,
+	// testResourcesImporter,
 ]);
 
 await importer.import();
