@@ -46,13 +46,11 @@ for (let idx = 0; idx < batches.length; idx++) {
 			console.log(`Processing ${document.source_url} in batch ${idx}...`);
 			try {
 				try {
-					const embeddingResult = await processor.regenerateChunksEmbeddings(
-						document,
-					);
+					const embeddingResult =
+						await processor.regenerateChunksEmbeddings(document);
 
-					const summaryEmbedding = await processor.regenerateSummaryEmbeddings(
-						document,
-					);
+					const summaryEmbedding =
+						await processor.regenerateSummaryEmbeddings(document);
 
 					const tokens =
 						embeddingResult.tokenUsage + summaryEmbedding.tokenUsage;
