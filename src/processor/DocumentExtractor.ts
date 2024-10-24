@@ -94,7 +94,6 @@ export class DocumentExtractor {
 			const mdPage = mdPages[idx];
 			let outputFile = `${pagesFolder}/${filenameWithoutExtension}-${idx}.md`;
 			let outPath = path.resolve(outputFile);
-			console.log(mdPage);
 			fs.writeFileSync(outPath, mdPage, { encoding: "utf8" });
 
 			extractedFiles.push({
