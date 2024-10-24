@@ -12,6 +12,7 @@ import { DocumentEmbeddor } from "./DocumentEmbeddor.js";
 import { DocumentExtractor } from "./DocumentExtractor.js";
 import { DocumentFinder } from "./DocumentFinder.js";
 import { DocumentSummarizor } from "./DocumentSummarizor.js";
+import { splitArrayEqually } from "../utils/utils.js";
 
 export class DocumentsProcessor {
 	settings: Settings;
@@ -56,6 +57,28 @@ export class DocumentsProcessor {
 
 		if (error) {
 			throw new Error(`Error inserting processed document: ${error.message}`);
+		}
+
+		return { ...extractionResult, processedDocument: data![0] };
+	}
+
+	// Reextract = re-extracts the document, but does not create a new processed document
+	async reextract(document: RegisteredDocument) {
+		const extractionResult = await DocumentExtractor.extract(
+			{
+				document: document,
+				targetPath: this.settings.processingDirectory,
+			} as ExtractRequest,
+			this.settings,
+		);
+
+		const { data, error } = await this.supabase
+			.from("processed_documents")
+			.select("*")
+			.eq("registered_document_id", document.id);
+
+		if (error) {
+			throw new Error(`Error getting processed document: ${error.message}`);
 		}
 
 		return { ...extractionResult, processedDocument: data![0] };
@@ -142,21 +165,28 @@ export class DocumentsProcessor {
 			this.openAi,
 		);
 
-		embeddingResult.embeddings.forEach(async (e) => {
-			const { error } = await this.supabase
-				.from("processed_document_chunks")
-				.insert({
-					content_temp: e.content,
-					embedding_temp: e.embedding,
-				})
-				.eq("id", embeddingResult.processedDocument.id);
-			if (error) {
-				throw new Error(
-					`Error updating processed document embeddings: ${error.message}`,
-				);
-			}
-		});
-
+		const embeddingBatches = splitArrayEqually(embeddingResult.embeddings, 10);
+		for (const batch of embeddingBatches) {
+			await Promise.all(
+				batch.map(async (batchItem) => {
+					const { error } = await this.supabase
+						.from("processed_document_chunks")
+						.update({
+							content_temp: batchItem.content,
+							embedding_temp: batchItem.embedding,
+						})
+						.eq("processed_document_id", embeddingResult.processedDocument.id)
+						.eq("chunk_index", batchItem.chunkIndex)
+						.eq("page", batchItem.page)
+						.select("*");
+					if (error) {
+						throw new Error(
+							`Error updating processed document embeddings: ${error.message}`,
+						);
+					}
+				}),
+			);
+		}
 		return embeddingResult;
 	}
 

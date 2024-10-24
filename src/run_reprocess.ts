@@ -48,7 +48,7 @@ for (let idx = 0; idx < batches.length; idx++) {
 		documentBatch.map(async (document) => {
 			console.log(`Processing ${document.source_url} in batch ${idx}...`);
 			try {
-				const extractionResult = await processor.extract(document);
+				const extractionResult = await processor.reextract(document);
 
 				try {
 					const summarizeResult = await processor.resummarize(extractionResult);
