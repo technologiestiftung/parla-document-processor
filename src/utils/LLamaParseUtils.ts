@@ -37,12 +37,12 @@ async function uploadFileToLLamaParse(filePath: string) {
 }
 
 async function checkParsingStatus(jobId: string) {
-	const myHeaders = new Headers();
-	myHeaders.append("Authorization", `Bearer ${process.env.LLAMA_PARSE_TOKEN}`);
+	const headers = new Headers();
+	headers.append("Authorization", `Bearer ${process.env.LLAMA_PARSE_TOKEN}`);
 
 	const requestOptions = {
 		method: "GET",
-		headers: myHeaders,
+		headers: headers,
 	};
 
 	const res = await fetch(
@@ -55,12 +55,12 @@ async function checkParsingStatus(jobId: string) {
 }
 
 async function fetchMarkdown(jobId: string) {
-	const myHeaders = new Headers();
-	myHeaders.append("Authorization", `Bearer ${process.env.LLAMA_PARSE_TOKEN}`);
+	const headers = new Headers();
+	headers.append("Authorization", `Bearer ${process.env.LLAMA_PARSE_TOKEN}`);
 
 	const requestOptions = {
 		method: "GET",
-		headers: myHeaders,
+		headers: headers,
 	};
 
 	const res = await fetch(
