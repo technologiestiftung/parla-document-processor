@@ -83,6 +83,7 @@ export class DocumentsProcessor {
 		return summary;
 	}
 
+	// Resummarize = re-creates and re-embedds the summary
 	async resummarize(extractionResult: ExtractionResult) {
 		const summary = await DocumentSummarizor.summarize(
 			extractionResult,
@@ -134,6 +135,7 @@ export class DocumentsProcessor {
 		return embeddingResult;
 	}
 
+	// Reembed = re-creates and re-embedds the chunks
 	async reembedd(extractionResult: ExtractionResult) {
 		const embeddingResult = await DocumentEmbeddor.embedd(
 			extractionResult,
