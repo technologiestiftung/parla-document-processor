@@ -21,7 +21,7 @@ const supabase = createClient(
 );
 
 let { data, error } = await supabase
-	.from("registered_documents")
+	.rpc("find_registered_documents_for_reprocessing")
 	.select("id, source_url, source_type, registered_at, metadata")
 	.order("id", { ascending: false })
 	.returns<Array<RegisteredDocument>>();
