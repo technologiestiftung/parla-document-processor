@@ -4,6 +4,7 @@ import {
 	clearDirectory,
 	handleError,
 	splitArrayEqually,
+	sumTokens,
 } from "./utils/utils.js";
 import { DocumentsProcessor } from "./processor/DocumentsProcessor.js";
 import { RegisteredDocument } from "./interfaces/Common.js";
@@ -20,7 +21,7 @@ const supabase = createClient(
 );
 
 let { data, error } = await supabase
-	.from("registered_documents")
+	.rpc("find_registered_documents_for_reprocessing")
 	.select("id, source_url, source_type, registered_at, metadata")
 	.order("id", { ascending: false })
 	.returns<Array<RegisteredDocument>>();
@@ -37,6 +38,8 @@ console.log(
 );
 
 let embeddingTokenCount = 0;
+let inputTokenCount = 0;
+let outputTokenCount = 0;
 
 for (let idx = 0; idx < batches.length; idx++) {
 	const documentBatch = batches[idx];
@@ -45,21 +48,20 @@ for (let idx = 0; idx < batches.length; idx++) {
 		documentBatch.map(async (document) => {
 			console.log(`Processing ${document.source_url} in batch ${idx}...`);
 			try {
+				const extractionResult = await processor.reextract(document);
+
 				try {
-					const embeddingResult = await processor.regenerateChunksEmbeddings(
-						document,
-					);
+					const summarizeResult = await processor.resummarize(extractionResult);
+					const embeddingResult = await processor.reembedd(extractionResult);
 
-					const summaryEmbedding = await processor.regenerateSummaryEmbeddings(
-						document,
-					);
+					const tokens = sumTokens(summarizeResult, embeddingResult);
 
-					const tokens =
-						embeddingResult.tokenUsage + summaryEmbedding.tokenUsage;
-					embeddingTokenCount += tokens;
+					embeddingTokenCount += tokens.embeddings;
+					inputTokenCount += tokens.inputs;
+					outputTokenCount += tokens.outputs;
 
 					console.log(
-						`Finished processing ${document.source_url} in batch ${idx} with and embeddingTokens = ${tokens}`,
+						`Finished processing ${document.source_url} in batch ${idx} with inputTokens=${tokens.inputs} and outputTokens = ${tokens.outputs} and embeddingTokens = ${tokens.embeddings}`,
 					);
 				} catch (e) {
 					await handleError(e, document, undefined, processor);
@@ -76,13 +78,16 @@ for (let idx = 0; idx < batches.length; idx++) {
 // Upon arrival of new data, the indices on database tables must be regenerated.
 // This can be done periodically by defining cron jobs in the database using pg_cron.
 
-// OpenAI pricing
-// https://openai.com/pricing
-// https://openai.com/pricing / 1K tokens for text-embedding-3-small
-const estimatedCost = 0.00002 * (embeddingTokenCount / 1000);
+// OpenAI pricing: https://openai.com/api/pricing/
+// $0.100 / 1M tokens tokens ada v2 embedding
+// gpt-4o-mini $0.150 / 1M input tokens, $0.600 / 1M output tokens
+const estimatedCost =
+	0.1 * (embeddingTokenCount / 1_000_000) +
+	0.15 * (inputTokenCount / 1_000_000) +
+	0.6 * (outputTokenCount / 1_000_000);
 
 console.log(
-	`Processing finished with embeddingTokens = ${embeddingTokenCount} and estimatedCost = ${estimatedCost}$`,
+	`Processing finished with inputTokens=${inputTokenCount} and outputTokens = ${outputTokenCount} and embeddingTokens = ${embeddingTokenCount} and estimatedCost = ${estimatedCost}$`,
 );
 
 process.exit(0);

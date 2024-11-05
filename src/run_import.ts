@@ -9,7 +9,6 @@ console.log(settings);
 const schrAnfrImporter = new SchrAnfrImporter(settings);
 const redNumbersImporter = new RedNumberImporter(settings);
 const webResourcesImporter = new WebResourcesImporter(settings);
-
 const importer = new Importer([
 	schrAnfrImporter,
 	redNumbersImporter,
