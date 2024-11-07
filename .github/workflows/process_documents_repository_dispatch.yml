@@ -22,7 +22,8 @@ jobs:
       MAX_PAGES_FOR_LLM_PARSE_LIMIT: ${{ vars.MAX_PAGES_FOR_LLM_PARSE_LIMIT }}
       MAX_DOCUMENTS_TO_PROCESS_IN_ONE_RUN: ${{ vars.MAX_DOCUMENTS_TO_PROCESS_IN_ONE_RUN }}
       MAX_DOCUMENTS_TO_IMPORT_PER_DOCUMENT_TYPE: ${{ vars.MAX_DOCUMENTS_TO_IMPORT_PER_DOCUMENT_TYPE }}
-
+      LLAMA_PARSE_TOKEN: ${{ secrets.LLAMA_PARSE_TOKEN }}
+      
     steps:
       - name: checkout code
         uses: actions/checkout@v4
