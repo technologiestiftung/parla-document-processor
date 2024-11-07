@@ -18,4 +18,5 @@ export const settings = {
 	maxDocumentsToImportPerDocumentType: parseInt(
 		process.env.MAX_DOCUMENTS_TO_IMPORT_PER_DOCUMENT_TYPE!,
 	),
+	llamaParseToken: process.env.LLAMA_PARSE_TOKEN!,
 } as Settings;

@@ -100,6 +100,7 @@ export interface Settings {
 	openAiEmbeddingModel: string;
 	maxDocumentsToProcessInOneRun: number;
 	maxDocumentsToImportPerDocumentType: number;
+	llamaParseToken: string;
 }
 
 export interface TokenUsage {

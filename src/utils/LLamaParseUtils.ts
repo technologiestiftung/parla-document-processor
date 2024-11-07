@@ -1,3 +1,4 @@
+import { settings } from "./../Settings.js";
 import fs from "fs";
 
 // Using a UUID as a separator to split the pages
@@ -12,7 +13,7 @@ async function uploadFileToLLamaParse(filePath: string) {
 	const blob = new Blob([fileBlob]);
 
 	const headers = new Headers();
-	headers.append("Authorization", `Bearer ${process.env.LLAMA_PARSE_TOKEN}`);
+	headers.append("Authorization", `Bearer ${settings.llamaParseToken}`);
 
 	const formdata = new FormData();
 	formdata.append("file", blob, filePath);
@@ -40,7 +41,7 @@ async function uploadFileToLLamaParse(filePath: string) {
 
 async function checkParsingStatus(jobId: string) {
 	const headers = new Headers();
-	headers.append("Authorization", `Bearer ${process.env.LLAMA_PARSE_TOKEN}`);
+	headers.append("Authorization", `Bearer ${settings.llamaParseToken}`);
 
 	const requestOptions = {
 		method: "GET",
@@ -58,7 +59,7 @@ async function checkParsingStatus(jobId: string) {
 
 async function fetchMarkdown(jobId: string) {
 	const headers = new Headers();
-	headers.append("Authorization", `Bearer ${process.env.LLAMA_PARSE_TOKEN}`);
+	headers.append("Authorization", `Bearer ${settings.llamaParseToken}`);
 
 	const requestOptions = {
 		method: "GET",
