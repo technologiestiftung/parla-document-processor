@@ -34,8 +34,6 @@ async function uploadFileToLLamaParse(filePath: string) {
 
 	const body = await res.json();
 
-	console.log(body);
-
 	return body;
 }
 
