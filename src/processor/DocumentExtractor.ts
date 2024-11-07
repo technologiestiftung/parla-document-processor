@@ -17,7 +17,14 @@ import {
 	PAGE_SEPARATOR,
 } from "../utils/LLamaParseUtils.js";
 
+import pdf2img from "pdf-img-convert";
+import { createWorker } from "tesseract.js";
+
 const MAGIC_TIMEOUT = 100000;
+
+const MAGIC_TEXT_TOO_SHORT_LENGTH = 32;
+const MAGIC_OCR_WIDTH = 2048;
+const MAGIC_OCR_HEIGHT = 2887;
 
 export class ExtractError extends Error {
 	document: RegisteredDocument;
@@ -34,8 +41,17 @@ export class DocumentExtractor {
 		extractRequest: ExtractRequest,
 		settings: Settings,
 	): Promise<ExtractionResult> {
-		const filename = extractRequest.document.source_url.split("/").slice(-1)[0];
+		// Attention: order is important because "@opendocsg/pdf2md" sets a global "document" variable
+		// which clashes with the createWorker() function because it then thinks it is inside a browser
+		const worker = await createWorker("deu");
+		// @ts-ignore
+		const pdf2md = (await import("@opendocsg/pdf2md")).default;
+		// End of attention
 
+		let filename = extractRequest.document.source_url.split("/").slice(-1)[0];
+		if (!filename.endsWith(".pdf")) {
+			filename += ".pdf";
+		}
 		const filenameWithoutExtension = filename.replace(".pdf", "");
 
 		const subfolder = `${extractRequest.targetPath}/${filenameWithoutExtension}`;
@@ -87,20 +103,64 @@ export class DocumentExtractor {
 			.filter((file) => file.endsWith(".pdf"));
 
 		let extractedFiles: Array<ExtractedFile> = [];
-		const mdText = await extractMarkdownViaLLamaParse(pathToPdf);
-		const mdPages = mdText.split(PAGE_SEPARATOR);
 
-		for (let idx = 0; idx < mdPages.length; idx++) {
-			const mdPage = mdPages[idx];
-			let outputFile = `${pagesFolder}/${filenameWithoutExtension}-${idx}.md`;
-			let outPath = path.resolve(outputFile);
-			fs.writeFileSync(outPath, mdPage, { encoding: "utf8" });
+		if (numPages <= settings.maxPagesForLlmParseLimit) {
+			console.log(
+				`Extracting via LLamaParse (num pages ${numPages} <= limit of ${settings.maxPagesForLlmParseLimit})...`,
+			);
+			const mdText = await extractMarkdownViaLLamaParse(pathToPdf);
+			const mdPages = mdText.split(PAGE_SEPARATOR);
+			for (let idx = 0; idx < mdPages.length; idx++) {
+				const mdPage = mdPages[idx];
+				let outputFile = `${pagesFolder}/${filenameWithoutExtension}-${idx}.md`;
+				let outPath = path.resolve(outputFile);
+				fs.writeFileSync(outPath, mdPage, { encoding: "utf8" });
 
-			extractedFiles.push({
-				page: idx,
-				path: outPath,
-				tokens: enc.encode(mdPage).length,
-			} as ExtractedFile);
+				extractedFiles.push({
+					page: idx,
+					path: outPath,
+					tokens: enc.encode(mdPage).length,
+				} as ExtractedFile);
+			}
+		} else {
+			console.log(
+				`Extracting via pdf2md (num pages ${numPages} > limit of ${settings.maxPagesForLlmParseLimit})...`,
+			);
+			for (let idx = 0; idx < pdfPageFiles.length; idx++) {
+				const pdfPageFile = pdfPageFiles[idx];
+				const pdfPage = pdfPageFile.replace(".pdf", "").split("-").slice(-1)[0];
+				const pdfBuffer = fs.readFileSync(`${pagesFolder}/${pdfPageFile}`);
+
+				let mdText = "";
+				let ocrText = "";
+
+				// @ts-ignore
+				mdText = await pdf2md(new Uint8Array(pdfBuffer), null);
+
+				// Fallback in case pdf2md fails to extract any text: Convert to Image, use OCR to extract text
+				if (mdText.length < MAGIC_TEXT_TOO_SHORT_LENGTH) {
+					const image = await pdf2img.convert(`${pagesFolder}/${pdfPageFile}`, {
+						width: MAGIC_OCR_WIDTH,
+						height: MAGIC_OCR_HEIGHT,
+					});
+					const pdfImagePage = pdfPageFile.replace(".pdf", ".png");
+					fs.writeFileSync(pdfImagePage, image[0]);
+					const extractionResult = await worker.recognize(pdfImagePage);
+					fs.rmSync(pdfImagePage);
+					ocrText = extractionResult.data.text;
+				}
+
+				let text = mdText.length < 32 ? ocrText : mdText;
+				let outputFile = `${pagesFolder}/${filenameWithoutExtension}-${pdfPage}.md`;
+				let outPath = path.resolve(outputFile);
+				fs.writeFileSync(outPath, text);
+
+				extractedFiles.push({
+					page: parseInt(pdfPage),
+					path: outPath,
+					tokens: enc.encode(text).length,
+				} as ExtractedFile);
+			}
 		}
 
 		return {

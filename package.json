@@ -36,6 +36,9 @@
 		]
 	},
 	"dependencies": {
+		"@opendocsg/pdf2md": "0.1.31",
+		"pdf-img-convert": "2.0.0",
+		"tesseract.js": "5.1.1",
 		"@dqbd/tiktoken": "^1.0.17",
 		"@supabase/supabase-js": "^2.45.6",
 		"command-line-args": "^6.0.0",

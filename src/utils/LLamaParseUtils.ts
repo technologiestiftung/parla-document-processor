@@ -5,7 +5,7 @@ import fs from "fs";
 export const PAGE_SEPARATOR = "3c579d32-abcc-4cab-bd6c-88ce8d754037";
 
 // Timeout in seconds for the markdown extraction
-const TIMEOUT_SECONDS = 120;
+const TIMEOUT_SECONDS = 300;
 
 async function uploadFileToLLamaParse(filePath: string) {
 	const fileBlob = fs.readFileSync(filePath);
@@ -92,6 +92,12 @@ export async function extractMarkdownViaLLamaParse(filePath: string) {
 		if (elapsedSeconds > TIMEOUT_SECONDS) {
 			throw new Error(
 				`File ${filePath} took too long to complete markdown extraction via LLamaParse...`,
+			);
+		}
+
+		if (statusRes.status === "ERROR") {
+			throw new Error(
+				`File ${filePath} failed to complete markdown extraction via LLamaParse...`,
 			);
 		}
 	}
