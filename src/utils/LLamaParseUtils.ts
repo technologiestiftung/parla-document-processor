@@ -85,6 +85,9 @@ export async function extractMarkdownViaLLamaParse(filePath: string) {
 	const then = Date.now();
 	while (statusRes.status !== "SUCCESS") {
 		statusRes = await checkParsingStatus(uploadRes.id);
+		console.log(
+			`Status of file ${filePath} (ID: ${uploadRes.id}): ${statusRes.status}...`,
+		);
 		await new Promise((resolve) => setTimeout(resolve, 1000));
 
 		// To avoid infinite loop, we will throw an error if it takes too long
