@@ -95,6 +95,7 @@ export interface Settings {
 	processingDirectory: string;
 	allowDeletion: boolean;
 	maxPagesLimit: number;
+	maxPagesForLlmParseLimit: number;
 	openAiModel: string;
 	openAiEmbeddingModel: string;
 	maxDocumentsToProcessInOneRun: number;
