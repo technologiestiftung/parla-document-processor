@@ -7,6 +7,9 @@ export const settings = {
 	processingDirectory: process.env.PROCESSING_DIR!,
 	allowDeletion: process.env.ALLOW_DELETION! === "true",
 	maxPagesLimit: parseInt(process.env.MAX_PAGES_LIMIT!),
+	maxPagesForLlmParseLimit: parseInt(
+		process.env.MAX_PAGES_FOR_LLM_PARSE_LIMIT!,
+	),
 	openAiModel: process.env.OPENAI_MODEL!,
 	openAiEmbeddingModel: process.env.OPENAI_EMBEDDING_MODEL!,
 	maxDocumentsToProcessInOneRun: parseInt(
