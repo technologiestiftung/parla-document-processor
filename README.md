@@ -56,17 +56,36 @@ This repository contains scripts for pre-processing PDF files for later use in t
 See [.env.sample](.env.sample)
 
 ```
+# Supabase Configuration
 SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
 SUPABASE_DB_CONNECTION=
+
+#OpenAI Configuration
 OPENAI_API_KEY=
 OPENAI_MODEL=
 OPENAI_EMBEDDING_MODEL=
-PROCESSING_DIR=. // Directory for storing temporary processing files
-ALLOW_DELETION=false // Documents with missing embeddings will not be deleted from the database
-MAX_PAGES_LIMIT=64 // Documents with more pages than this will not be processed
-MAX_DOCUMENTS_TO_PROCESS=1000 // A maximum number of documents to process
-LLAMA_PARSE_TOKEN= // The API token of the [LLamaParse API](https://docs.llamaindex.ai/en/stable/llama_cloud/llama_parse/)
+
+# Directory for processing temporary files
+PROCESSING_DIR=
+
+ALLOW_DELETION=false
+
+# Max limit for the number of pages to process (with fallback strategy)
+MAX_PAGES_LIMIT=5000
+
+# Limit for the number of pages to process with LLamaParse
+MAX_PAGES_FOR_LLM_PARSE_LIMIT=128
+
+# LLamaParse Token (get via LlamaParse Cloud)
+LLAMA_PARSE_TOKEN=
+
+# Max number of documents to process in one run (for limiting the maximum runtime)
+MAX_DOCUMENTS_TO_PROCESS_IN_ONE_RUN=
+
+# Max number of documents to import in one run (for limiting the maximum runtime)
+MAX_DOCUMENTS_TO_IMPORT_PER_DOCUMENT_TYPE=
+
 ```
 
 ## Run locally
