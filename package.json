@@ -36,7 +36,7 @@
 		]
 	},
 	"dependencies": {
-		"@opendocsg/pdf2md": "0.1.31",
+		"@opendocsg/pdf2md": "0.2.1",
 		"pdf-img-convert": "2.0.0",
 		"tesseract.js": "5.1.1",
 		"@dqbd/tiktoken": "^1.0.17",
@@ -44,12 +44,12 @@
 		"command-line-args": "^6.0.0",
 		"exponential-backoff": "3.1.1",
 		"nodejs-file-downloader": "^4.13.0",
-		"openai": "4.68.1",
+		"openai": "4.77.0",
 		"pdf-lib": "^1.17.1",
 		"pdf-page-counter": "1.0.3",
 		"postgres": "^3.4.4",
 		"progress": "^2.0.3",
-		"puppeteer": "23.6.0",
+		"puppeteer": "23.11.1",
 		"xml2js": "0.6.2"
 	}
 }
