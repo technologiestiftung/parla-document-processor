@@ -15,7 +15,10 @@ This repository contains scripts for pre-processing PDF files for later use in t
 - Running and accessible Supabase database with the schema defined in https://github.com/technologiestiftung/parla-api
 - [OpenAI](https://platform.openai.com/docs/overview) account and API key
 - [LLamaParse](https://docs.llamaindex.ai/en/stable/llama_cloud/llama_parse/) account and API key
-
+- Needs some libraries to be able to install the transitive dependency canvas, see https://www.npmjs.com/package/canvas#compiling. For macOS:
+  ```bash
+  brew install pkg-config cairo pango libpng jpeg giflib librsvg pixman python-setuptools
+  ```
 ## Features
 
 - Register relevant documents from various data sources, see [./src/importers](./src/importers). Registering documents means storing their download URL and possible metadata in the database.
