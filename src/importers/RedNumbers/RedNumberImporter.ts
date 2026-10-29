@@ -1,6 +1,7 @@
 import { SupabaseClient, createClient } from "@supabase/supabase-js";
 import postgres from "postgres";
 import { DocumentImporter, Settings } from "../../interfaces/Common.js";
+import { ELECTORAL_TERMS } from "../ElectoralTerms.js";
 
 export class RedNumberImporter implements DocumentImporter {
 	documentType: string = "Hauptausschussprotokoll";
@@ -18,9 +19,9 @@ export class RedNumberImporter implements DocumentImporter {
 		);
 	}
 
-	async getTotalNumberOfPages(): Promise<number> {
+	async getTotalNumberOfPages(electoralTerm: number): Promise<number> {
 		var formdata = new FormData();
-		formdata.append("electoralTerm", "19");
+		formdata.append("electoralTerm", electoralTerm.toString());
 		formdata.append("committee", "haupt-ausschuss.nsf");
 		formdata.append("status", "Erledigt");
 		var requestOptions = {
@@ -31,6 +32,11 @@ export class RedNumberImporter implements DocumentImporter {
 			"https://www.parlament-berlin.de/api/v1/documents/processes",
 			requestOptions,
 		);
+		if (!totalPagesRes.ok) {
+			throw new Error(
+				`API responded with status ${totalPagesRes.status} for electoral term ${electoralTerm}`,
+			);
+		}
 		const totalPagesJsonRes = await totalPagesRes.json();
 		const totalPages = Math.ceil(
 			totalPagesJsonRes.paginator.total / totalPagesJsonRes.paginator.pageSize,
@@ -38,12 +44,12 @@ export class RedNumberImporter implements DocumentImporter {
 		return totalPages;
 	}
 
-	async import(): Promise<number> {
-		const totalPages = await this.getTotalNumberOfPages();
-		let localDocuments: Array<any> = [];
+	async fetchDocuments(electoralTerm: number): Promise<Array<any>> {
+		const totalPages = await this.getTotalNumberOfPages(electoralTerm);
+		const localDocuments: Array<any> = [];
 		for (let page = 1; page <= totalPages; page++) {
 			var formdata = new FormData();
-			formdata.append("electoralTerm", "19");
+			formdata.append("electoralTerm", electoralTerm.toString());
 			formdata.append("committee", "haupt-ausschuss.nsf");
 			formdata.append("startIndex", page.toString());
 			formdata.append("status", "Erledigt");
@@ -55,6 +61,11 @@ export class RedNumberImporter implements DocumentImporter {
 				"https://www.parlament-berlin.de/api/v1/documents/processes",
 				requestOptions,
 			);
+			if (!res.ok) {
+				throw new Error(
+					`API responded with status ${res.status} for electoral term ${electoralTerm}, page ${page}`,
+				);
+			}
 			const jsonRes = await res.json();
 			for (let index = 0; index < jsonRes.items.length; index++) {
 				const item = jsonRes.items[index];
@@ -73,6 +84,29 @@ export class RedNumberImporter implements DocumentImporter {
 					});
 				}
 			}
+		}
+		// An empty source is treated as an error, otherwise all documents of the
+		// electoral term would be deleted from the database (if ALLOW_DELETION=true)
+		if (localDocuments.length === 0) {
+			throw new Error(
+				`API returned no documents for electoral term ${electoralTerm}`,
+			);
+		}
+		return localDocuments;
+	}
+
+	async import(): Promise<number> {
+		let localDocuments: Array<any> = [];
+		const electoralTermBySourceUrl = new Map<string, number>();
+		for (const electoralTerm of ELECTORAL_TERMS) {
+			const documentsOfTerm = await this.fetchDocuments(electoralTerm);
+			console.log(
+				`${documentsOfTerm.length} documents in source for "${this.documentType}" in electoral term ${electoralTerm}...`,
+			);
+			documentsOfTerm.forEach(({ href }) =>
+				electoralTermBySourceUrl.set(href, electoralTerm),
+			);
+			localDocuments = localDocuments.concat(documentsOfTerm);
 		}
 
 		// Limit the number of documents to import. This is done for testing and staging
@@ -109,8 +143,11 @@ export class RedNumberImporter implements DocumentImporter {
 
 		// delete only if expliclty allowed
 		if (this.settings.allowDeletion) {
+			// only delete documents of electoral terms imported in this run, otherwise
+			// all documents of an electoral term removed from ELECTORAL_TERMS would be deleted
 			const remoteDocumentsToDelete = documentsInDatabase.filter((rd) => {
 				return (
+					ELECTORAL_TERMS.includes(rd.electoral_term) &&
 					localDocuments.filter((ld) => {
 						return ld.href === rd.source_url;
 					}).length === 0
@@ -139,6 +176,7 @@ export class RedNumberImporter implements DocumentImporter {
 				source_url: ld.href,
 				metadata: ld,
 				registered_at: new Date(),
+				electoral_term: electoralTermBySourceUrl.get(ld.href),
 			};
 		});
 
