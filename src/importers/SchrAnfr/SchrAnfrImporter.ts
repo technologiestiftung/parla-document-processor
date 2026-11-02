@@ -31,31 +31,33 @@ export class SchrAnfrImporter implements DocumentImporter {
 		}
 		const xml = await xmlRes.text();
 		const pardok = await parseXML2JSON(xml);
-		const vorgangs = pardok.Export.Vorgang.filter((v) => {
+		// An export without any Vorgang (e.g. of a new electoral term) has no Vorgang key
+		const vorgangs = (pardok.Export.Vorgang ?? []).filter((v) => {
 			return (
 				!v.VFunktion || v.VFunktion.length === 0 || v.VFunktion[0] !== "delete"
 			);
 		});
-		const documents = vorgangs
+		return vorgangs
 			.flatMap((v) => v.Dokument)
 			.filter((d) => d.LokURL && d.DokTyp)
 			.filter((d) => d.DokTyp[0] === "SchrAnfr");
-		// An empty source is treated as an error, otherwise all documents of the
-		// electoral term would be deleted from the database (if ALLOW_DELETION=true)
-		if (documents.length === 0) {
-			throw new Error(`${pardokSourceUrl} contains no documents`);
-		}
-		return documents;
 	}
 
 	async import(): Promise<number> {
 		let documentsInPardok: Array<Dokument> = [];
 		const electoralTermBySourceUrl = new Map<string, number>();
+		const emptyElectoralTerms: Array<number> = [];
 		for (const electoralTerm of ELECTORAL_TERMS) {
 			const documentsOfTerm = await this.fetchDocuments(electoralTerm);
 			console.log(
 				`${documentsOfTerm.length} documents in source for "${this.documentType}" in electoral term ${electoralTerm}...`,
 			);
+			if (documentsOfTerm.length === 0) {
+				console.warn(
+					`WARNING: No documents in source for "${this.documentType}" in electoral term ${electoralTerm}...`,
+				);
+				emptyElectoralTerms.push(electoralTerm);
+			}
 			documentsOfTerm.forEach(({ LokURL }) =>
 				electoralTermBySourceUrl.set(LokURL[0], electoralTerm),
 			);
@@ -74,6 +76,20 @@ export class SchrAnfrImporter implements DocumentImporter {
 
 		const documentsInDatabase = await this
 			.sql`SELECT * FROM registered_documents where source_type = ${this.documentType}`;
+
+		// An empty source is fine for a new electoral term without documents yet. If the
+		// database already has documents of that term, the source is broken: fail instead
+		// of deleting all of them (if ALLOW_DELETION=true)
+		const brokenElectoralTerms = emptyElectoralTerms.filter((electoralTerm) =>
+			documentsInDatabase.some(
+				({ electoral_term }) => electoral_term === electoralTerm,
+			),
+		);
+		if (brokenElectoralTerms.length > 0) {
+			throw new Error(
+				`No documents in source for "${this.documentType}" in electoral terms ${brokenElectoralTerms.join(", ")}, but documents of them in database`,
+			);
+		}
 
 		console.log(
 			`${documentsInPardok.length} documents in source for "${this.documentType}"...`,

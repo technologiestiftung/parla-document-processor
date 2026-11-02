@@ -85,24 +85,24 @@ export class RedNumberImporter implements DocumentImporter {
 				}
 			}
 		}
-		// An empty source is treated as an error, otherwise all documents of the
-		// electoral term would be deleted from the database (if ALLOW_DELETION=true)
-		if (localDocuments.length === 0) {
-			throw new Error(
-				`API returned no documents for electoral term ${electoralTerm}`,
-			);
-		}
 		return localDocuments;
 	}
 
 	async import(): Promise<number> {
 		let localDocuments: Array<any> = [];
 		const electoralTermBySourceUrl = new Map<string, number>();
+		const emptyElectoralTerms: Array<number> = [];
 		for (const electoralTerm of ELECTORAL_TERMS) {
 			const documentsOfTerm = await this.fetchDocuments(electoralTerm);
 			console.log(
 				`${documentsOfTerm.length} documents in source for "${this.documentType}" in electoral term ${electoralTerm}...`,
 			);
+			if (documentsOfTerm.length === 0) {
+				console.warn(
+					`WARNING: No documents in source for "${this.documentType}" in electoral term ${electoralTerm}...`,
+				);
+				emptyElectoralTerms.push(electoralTerm);
+			}
 			documentsOfTerm.forEach(({ href }) =>
 				electoralTermBySourceUrl.set(href, electoralTerm),
 			);
@@ -121,6 +121,20 @@ export class RedNumberImporter implements DocumentImporter {
 
 		const documentsInDatabase = await this
 			.sql`SELECT * FROM registered_documents where source_type = ${this.documentType}`;
+
+		// An empty source is fine for a new electoral term without documents yet. If the
+		// database already has documents of that term, the source is broken: fail instead
+		// of deleting all of them (if ALLOW_DELETION=true)
+		const brokenElectoralTerms = emptyElectoralTerms.filter((electoralTerm) =>
+			documentsInDatabase.some(
+				({ electoral_term }) => electoral_term === electoralTerm,
+			),
+		);
+		if (brokenElectoralTerms.length > 0) {
+			throw new Error(
+				`No documents in source for "${this.documentType}" in electoral terms ${brokenElectoralTerms.join(", ")}, but documents of them in database`,
+			);
+		}
 
 		const localDocumentsToAdd = localDocuments.filter((ld) => {
 			return (
