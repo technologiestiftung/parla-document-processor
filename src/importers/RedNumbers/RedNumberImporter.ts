@@ -20,11 +20,11 @@ export class RedNumberImporter implements DocumentImporter {
 	}
 
 	async getTotalNumberOfPages(electoralTerm: number): Promise<number> {
-		var formdata = new FormData();
+		const formdata = new FormData();
 		formdata.append("electoralTerm", electoralTerm.toString());
 		formdata.append("committee", "haupt-ausschuss.nsf");
 		formdata.append("status", "Erledigt");
-		var requestOptions = {
+		const requestOptions = {
 			method: "POST",
 			body: formdata,
 		};
@@ -48,12 +48,12 @@ export class RedNumberImporter implements DocumentImporter {
 		const totalPages = await this.getTotalNumberOfPages(electoralTerm);
 		const localDocuments: Array<any> = [];
 		for (let page = 1; page <= totalPages; page++) {
-			var formdata = new FormData();
+			const formdata = new FormData();
 			formdata.append("electoralTerm", electoralTerm.toString());
 			formdata.append("committee", "haupt-ausschuss.nsf");
 			formdata.append("startIndex", page.toString());
 			formdata.append("status", "Erledigt");
-			var requestOptions = {
+			const requestOptions = {
 				method: "POST",
 				body: formdata,
 			};
@@ -92,7 +92,17 @@ export class RedNumberImporter implements DocumentImporter {
 		let localDocuments: Array<any> = [];
 		const electoralTermBySourceUrl = new Map<string, number>();
 		const emptyElectoralTerms: Array<number> = [];
+		const importedElectoralTerms: Array<number> = [];
 		for (const electoralTerm of ELECTORAL_TERMS) {
+			// Skipped for now: since 2026-11-02 the API returns every process twice, so electoral
+			// term 19 exceeds its limit of 10,000 results per query (pages beyond respond with 500)
+			if (electoralTerm === 19) {
+				console.warn(
+					`WARNING: Skipping "${this.documentType}" in electoral term ${electoralTerm}: the API returns every process twice, which exceeds its limit of 10,000 results per query (pages beyond respond with status 500). No documents of this term are imported or deleted...`,
+				);
+				continue;
+			}
+			importedElectoralTerms.push(electoralTerm);
 			const documentsOfTerm = await this.fetchDocuments(electoralTerm);
 			console.log(
 				`${documentsOfTerm.length} documents in source for "${this.documentType}" in electoral term ${electoralTerm}...`,
@@ -161,7 +171,7 @@ export class RedNumberImporter implements DocumentImporter {
 			// all documents of an electoral term removed from ELECTORAL_TERMS would be deleted
 			const remoteDocumentsToDelete = documentsInDatabase.filter((rd) => {
 				return (
-					ELECTORAL_TERMS.includes(rd.electoral_term) &&
+					importedElectoralTerms.includes(rd.electoral_term) &&
 					localDocuments.filter((ld) => {
 						return ld.href === rd.source_url;
 					}).length === 0
