@@ -18,7 +18,7 @@ export class DocumentsProcessor {
 	settings: Settings;
 	sql: postgres.Sql;
 	supabase: SupabaseClient;
-	openAi: OpenAI;
+	llm: OpenAI;
 
 	constructor(settings: Settings) {
 		this.settings = settings;
@@ -27,7 +27,11 @@ export class DocumentsProcessor {
 			settings.supabaseUrl,
 			settings.supabaseServiceRoleKey,
 		);
-		this.openAi = new OpenAI({ apiKey: settings.openaAiApiKey });
+		// Any OpenAI-compatible API (e.g. Mistral) for summaries, tags and embeddings
+		this.llm = new OpenAI({
+			apiKey: settings.llmApiKey,
+			baseURL: settings.llmBaseUrl,
+		});
 	}
 
 	async find() {
@@ -87,7 +91,7 @@ export class DocumentsProcessor {
 	async summarize(extractionResult: ExtractionResult) {
 		const summary = await DocumentSummarizor.summarize(
 			extractionResult,
-			this.openAi,
+			this.llm,
 		);
 		const { error } = await this.supabase
 			.from("processed_document_summaries")
@@ -110,7 +114,7 @@ export class DocumentsProcessor {
 	async resummarize(extractionResult: ExtractionResult) {
 		const summary = await DocumentSummarizor.summarize(
 			extractionResult,
-			this.openAi,
+			this.llm,
 		);
 		const { error } = await this.supabase
 			.from("processed_document_summaries")
@@ -132,7 +136,7 @@ export class DocumentsProcessor {
 	async embedd(extractionResult: ExtractionResult) {
 		const embeddingResult = await DocumentEmbeddor.embedd(
 			extractionResult,
-			this.openAi,
+			this.llm,
 		);
 
 		const { error } = await this.supabase
@@ -162,7 +166,7 @@ export class DocumentsProcessor {
 	async reembedd(extractionResult: ExtractionResult) {
 		const embeddingResult = await DocumentEmbeddor.embedd(
 			extractionResult,
-			this.openAi,
+			this.llm,
 		);
 
 		const embeddingBatches = splitArrayEqually(embeddingResult.embeddings, 10);
