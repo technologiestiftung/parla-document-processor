@@ -1,6 +1,7 @@
 import { SupabaseClient, createClient } from "@supabase/supabase-js";
 import postgres from "postgres";
 import { DocumentImporter, Settings } from "../../interfaces/Common.js";
+import { ELECTORAL_TERMS } from "../ElectoralTerms.js";
 
 export class RedNumberImporter implements DocumentImporter {
 	documentType: string = "Hauptausschussprotokoll";
@@ -18,12 +19,12 @@ export class RedNumberImporter implements DocumentImporter {
 		);
 	}
 
-	async getTotalNumberOfPages(): Promise<number> {
-		var formdata = new FormData();
-		formdata.append("electoralTerm", "19");
+	async getTotalNumberOfPages(electoralTerm: number): Promise<number> {
+		const formdata = new FormData();
+		formdata.append("electoralTerm", electoralTerm.toString());
 		formdata.append("committee", "haupt-ausschuss.nsf");
 		formdata.append("status", "Erledigt");
-		var requestOptions = {
+		const requestOptions = {
 			method: "POST",
 			body: formdata,
 		};
@@ -31,6 +32,11 @@ export class RedNumberImporter implements DocumentImporter {
 			"https://www.parlament-berlin.de/api/v1/documents/processes",
 			requestOptions,
 		);
+		if (!totalPagesRes.ok) {
+			throw new Error(
+				`API responded with status ${totalPagesRes.status} for electoral term ${electoralTerm}`,
+			);
+		}
 		const totalPagesJsonRes = await totalPagesRes.json();
 		const totalPages = Math.ceil(
 			totalPagesJsonRes.paginator.total / totalPagesJsonRes.paginator.pageSize,
@@ -38,16 +44,16 @@ export class RedNumberImporter implements DocumentImporter {
 		return totalPages;
 	}
 
-	async import(): Promise<number> {
-		const totalPages = await this.getTotalNumberOfPages();
-		let localDocuments: Array<any> = [];
+	async fetchDocuments(electoralTerm: number): Promise<Array<any>> {
+		const totalPages = await this.getTotalNumberOfPages(electoralTerm);
+		const localDocuments: Array<any> = [];
 		for (let page = 1; page <= totalPages; page++) {
-			var formdata = new FormData();
-			formdata.append("electoralTerm", "19");
+			const formdata = new FormData();
+			formdata.append("electoralTerm", electoralTerm.toString());
 			formdata.append("committee", "haupt-ausschuss.nsf");
 			formdata.append("startIndex", page.toString());
 			formdata.append("status", "Erledigt");
-			var requestOptions = {
+			const requestOptions = {
 				method: "POST",
 				body: formdata,
 			};
@@ -55,6 +61,11 @@ export class RedNumberImporter implements DocumentImporter {
 				"https://www.parlament-berlin.de/api/v1/documents/processes",
 				requestOptions,
 			);
+			if (!res.ok) {
+				throw new Error(
+					`API responded with status ${res.status} for electoral term ${electoralTerm}, page ${page}`,
+				);
+			}
 			const jsonRes = await res.json();
 			for (let index = 0; index < jsonRes.items.length; index++) {
 				const item = jsonRes.items[index];
@@ -74,6 +85,39 @@ export class RedNumberImporter implements DocumentImporter {
 				}
 			}
 		}
+		return localDocuments;
+	}
+
+	async import(): Promise<number> {
+		let localDocuments: Array<any> = [];
+		const electoralTermBySourceUrl = new Map<string, number>();
+		const emptyElectoralTerms: Array<number> = [];
+		const importedElectoralTerms: Array<number> = [];
+		for (const electoralTerm of ELECTORAL_TERMS) {
+			// Skipped for now: since 2026-11-02 the API returns every process twice, so electoral
+			// term 19 exceeds its limit of 10,000 results per query (pages beyond respond with 500)
+			if (electoralTerm === 19) {
+				console.warn(
+					`WARNING: Skipping "${this.documentType}" in electoral term ${electoralTerm}: the API returns every process twice, which exceeds its limit of 10,000 results per query (pages beyond respond with status 500). No documents of this term are imported or deleted...`,
+				);
+				continue;
+			}
+			importedElectoralTerms.push(electoralTerm);
+			const documentsOfTerm = await this.fetchDocuments(electoralTerm);
+			console.log(
+				`${documentsOfTerm.length} documents in source for "${this.documentType}" in electoral term ${electoralTerm}...`,
+			);
+			if (documentsOfTerm.length === 0) {
+				console.warn(
+					`WARNING: No documents in source for "${this.documentType}" in electoral term ${electoralTerm}...`,
+				);
+				emptyElectoralTerms.push(electoralTerm);
+			}
+			documentsOfTerm.forEach(({ href }) =>
+				electoralTermBySourceUrl.set(href, electoralTerm),
+			);
+			localDocuments = localDocuments.concat(documentsOfTerm);
+		}
 
 		// Limit the number of documents to import. This is done for testing and staging
 		// environment where we do not want the imported documents to grow.
@@ -87,6 +131,20 @@ export class RedNumberImporter implements DocumentImporter {
 
 		const documentsInDatabase = await this
 			.sql`SELECT * FROM registered_documents where source_type = ${this.documentType}`;
+
+		// An empty source is fine for a new electoral term without documents yet. If the
+		// database already has documents of that term, the source is broken: fail instead
+		// of deleting all of them (if ALLOW_DELETION=true)
+		const brokenElectoralTerms = emptyElectoralTerms.filter((electoralTerm) =>
+			documentsInDatabase.some(
+				({ electoral_term }) => electoral_term === electoralTerm,
+			),
+		);
+		if (brokenElectoralTerms.length > 0) {
+			throw new Error(
+				`No documents in source for "${this.documentType}" in electoral terms ${brokenElectoralTerms.join(", ")}, but documents of them in database`,
+			);
+		}
 
 		const localDocumentsToAdd = localDocuments.filter((ld) => {
 			return (
@@ -109,8 +167,11 @@ export class RedNumberImporter implements DocumentImporter {
 
 		// delete only if expliclty allowed
 		if (this.settings.allowDeletion) {
+			// only delete documents of electoral terms imported in this run, otherwise
+			// all documents of an electoral term removed from ELECTORAL_TERMS would be deleted
 			const remoteDocumentsToDelete = documentsInDatabase.filter((rd) => {
 				return (
+					importedElectoralTerms.includes(rd.electoral_term) &&
 					localDocuments.filter((ld) => {
 						return ld.href === rd.source_url;
 					}).length === 0
@@ -139,6 +200,7 @@ export class RedNumberImporter implements DocumentImporter {
 				source_url: ld.href,
 				metadata: ld,
 				registered_at: new Date(),
+				electoral_term: electoralTermBySourceUrl.get(ld.href),
 			};
 		});
 
