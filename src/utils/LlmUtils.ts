@@ -1,9 +1,9 @@
 import { OpenAI } from "openai";
 import { backOff } from "exponential-backoff";
 import {
-	OpenAIEmbeddingResponse,
-	OpenAITagsResponse,
-	OpenAITextResponse,
+	LlmEmbeddingResponse,
+	LlmTagsResponse,
+	LlmTextResponse,
 } from "../interfaces/Common.js";
 import {
 	enc,
@@ -15,13 +15,13 @@ import { settings } from "../Settings.js";
 
 export async function generateEmbedding(
 	content: string,
-	openAi: OpenAI,
-): Promise<OpenAIEmbeddingResponse> {
+	llm: OpenAI,
+): Promise<LlmEmbeddingResponse> {
 	const embeddingResponse = await backOff(
 		async () =>
-			await openAi.embeddings.create(
+			await llm.embeddings.create(
 				{
-					model: settings.openAiEmbeddingModel,
+					model: settings.llmEmbeddingModel,
 					input: content,
 				},
 				{ timeout: 10000 },
@@ -44,15 +44,48 @@ export async function generateEmbedding(
 	};
 }
 
+// Reasoning models (e.g. GLM via Mistral) return the content as a list of chunks
+// (thinking and text) instead of a string, so only the text chunks are kept
+function getTextContent(content: unknown): string {
+	if (typeof content === "string") {
+		return content;
+	}
+	if (Array.isArray(content)) {
+		return (content as Array<{ type: string; text?: string }>)
+			.filter(({ type }) => type === "text")
+			.map(({ text }) => text ?? "")
+			.join("");
+	}
+	return "";
+}
+
+// Only sent if set, as not every model supports it (e.g. models without reasoning reject it)
+function getReasoningEffortParam(): Record<string, string> {
+	return settings.llmChatReasoningEffort
+		? { reasoning_effort: settings.llmChatReasoningEffort }
+		: {};
+}
+
+// Not every model / provider enforces response_format, so the JSON object may be wrapped in text or code fences
+function parseJsonObject(content: string) {
+	const start = content.indexOf("{");
+	const end = content.lastIndexOf("}");
+	if (start === -1 || end === -1) {
+		throw new Error(`No JSON object found in response: ${content}`);
+	}
+	return JSON.parse(content.slice(start, end + 1));
+}
+
 export async function generateTags(
 	content: string,
-	openAi: OpenAI,
-): Promise<OpenAITagsResponse> {
-	const tagSummary = await backOff(
-		async () =>
-			await openAi.chat.completions.create(
+	llm: OpenAI,
+): Promise<LlmTagsResponse> {
+	const { tagSummary, tags } = await backOff(
+		async () => {
+			const tagSummary = await llm.chat.completions.create(
 				{
-					model: settings.openAiModel,
+					model: settings.llmChatModel,
+					...getReasoningEffortParam(),
 					response_format: { type: "json_object" },
 					messages: [
 						{
@@ -74,7 +107,13 @@ export async function generateTags(
 					stream: false,
 				},
 				{ timeout: 100000 },
-			),
+			);
+			// Parse inside backOff so that malformed JSON triggers a retry
+			const tags = parseJsonObject(
+				getTextContent(tagSummary.choices[0].message?.content),
+			);
+			return { tagSummary, tags };
+		},
 		{
 			startingDelay: 1000,
 			numOfAttempts: 10,
@@ -85,8 +124,6 @@ export async function generateTags(
 		},
 	);
 
-	const tags = JSON.parse(tagSummary.choices[0].message?.content ?? "");
-
 	return {
 		tags: tags,
 		inputTokens: tagSummary.usage?.prompt_tokens ?? 0,
@@ -96,13 +133,14 @@ export async function generateTags(
 
 export async function generateSummary(
 	content: string,
-	openAi: OpenAI,
-): Promise<OpenAITextResponse> {
+	llm: OpenAI,
+): Promise<LlmTextResponse> {
 	const completeSummary = await backOff(
 		async () =>
-			await openAi.chat.completions.create(
+			await llm.chat.completions.create(
 				{
-					model: settings.openAiModel,
+					model: settings.llmChatModel,
+					...getReasoningEffortParam(),
 					messages: [
 						{
 							role: "system",
@@ -133,8 +171,13 @@ export async function generateSummary(
 		},
 	);
 
+	const summary = getTextContent(completeSummary.choices[0].message?.content);
+	if (summary.length === 0) {
+		throw new Error("Generated summary is empty");
+	}
+
 	return {
-		result: completeSummary.choices[0].message?.content ?? "",
+		result: summary,
 		inputTokens: completeSummary.usage?.prompt_tokens ?? 0,
 		outputTokens: completeSummary.usage?.completion_tokens ?? 0,
 	};
@@ -142,9 +185,9 @@ export async function generateSummary(
 
 export async function generateSummaryForLargeDocument(
 	completeDocument: string,
-	openAi: OpenAI,
-	allSummaries: Array<OpenAITextResponse> = [],
-): Promise<OpenAITextResponse> {
+	llm: OpenAI,
+	allSummaries: Array<LlmTextResponse> = [],
+): Promise<LlmTextResponse> {
 	// Split in chunks where each token count of chunk < MAX_TOKEN_COUNT_FOR_SUMMARY
 	const maxTokenChunks = splitInChunksAccordingToTokenLimit(
 		completeDocument,
@@ -153,12 +196,12 @@ export async function generateSummaryForLargeDocument(
 
 	// Generate summaries in batches (to avoid 429)
 	let batches = splitArrayEqually(maxTokenChunks, 10);
-	var summaries: Array<OpenAITextResponse> = [];
+	var summaries: Array<LlmTextResponse> = [];
 	for (let idx = 0; idx < batches.length; idx++) {
 		const batch = batches[idx];
 		const sx = await Promise.all(
 			batch.map(async (chunk) => {
-				const summary = await generateSummary(chunk, openAi);
+				const summary = await generateSummary(chunk, llm);
 				return summary;
 			}),
 		);
@@ -183,12 +226,12 @@ export async function generateSummaryForLargeDocument(
 		// Recursively start again with new summary as document
 		return generateSummaryForLargeDocument(
 			totalSummary,
-			openAi,
+			llm,
 			combinedSummaries,
 		);
 	} else {
 		// Generate final summary
-		const finalSummary = await generateSummary(totalSummary, openAi);
+		const finalSummary = await generateSummary(totalSummary, llm);
 		console.log(
 			`Generated final summary with input tokens=${finalSummary.inputTokens} and output tokens=${finalSummary.outputTokens}...`,
 		);

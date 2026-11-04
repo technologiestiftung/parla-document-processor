@@ -78,16 +78,16 @@ for (let idx = 0; idx < batches.length; idx++) {
 // Upon arrival of new data, the indices on database tables must be regenerated.
 // This can be done periodically by defining cron jobs in the database using pg_cron.
 
-// OpenAI pricing: https://openai.com/api/pricing/
-// $0.100 / 1M tokens tokens ada v2 embedding
-// gpt-4o-mini $0.150 / 1M input tokens, $0.600 / 1M output tokens
+// Mistral pricing as of 2026-11-03: https://mistral.ai/pricing
+// mistral-embed-2312: $0.085 / 1M tokens
+// zai-glm-5-3-flash: $0.1275 / 1M input tokens, $0.425 / 1M output tokens
 const estimatedCost =
-	0.1 * (embeddingTokenCount / 1_000_000) +
-	0.15 * (inputTokenCount / 1_000_000) +
-	0.6 * (outputTokenCount / 1_000_000);
+	0.085 * (embeddingTokenCount / 1_000_000) +
+	0.1275 * (inputTokenCount / 1_000_000) +
+	0.425 * (outputTokenCount / 1_000_000);
 
 console.log(
-	`Processing finished with inputTokens=${inputTokenCount} and outputTokens = ${outputTokenCount} and embeddingTokens = ${embeddingTokenCount} and estimatedCost = ${estimatedCost}$`,
+	`Processing finished with inputTokens=${inputTokenCount} and outputTokens = ${outputTokenCount} and embeddingTokens = ${embeddingTokenCount} and estimatedCost = ${estimatedCost}$ (prices as of 2026-11-03 for mistral-embed-2312 and zai-glm-5-3-flash, models used: ${settings.llmEmbeddingModel} and ${settings.llmChatModel})`,
 );
 
 process.exit(0);

@@ -13,12 +13,13 @@ This repository contains scripts for pre-processing PDF files for later use in t
 ## Prerequisites / External Services
 
 - Running and accessible Supabase database with the schema defined in https://github.com/technologiestiftung/parla-api
-- [OpenAI](https://platform.openai.com/docs/overview) account and API key
+- [Mistral](https://docs.mistral.ai/) account and API key (used for summaries, tags and embeddings). Any other OpenAI-compatible API offering chat completions and embeddings works as well.
 - [LLamaParse](https://docs.llamaindex.ai/en/stable/llama_cloud/llama_parse/) account and API key
 - Needs some libraries to be able to install the transitive dependency canvas, see https://www.npmjs.com/package/canvas#compiling. For macOS:
   ```bash
   brew install pkg-config cairo pango libpng jpeg giflib librsvg pixman python-setuptools
   ```
+
 ## Features
 
 - Register relevant documents from various data sources, see [./src/importers](./src/importers). Registering documents means storing their download URL and possible metadata in the database.
@@ -26,14 +27,14 @@ This repository contains scripts for pre-processing PDF files for later use in t
 
   1. Downloading the PDF
   2. Extracting text (Markdown) content from the PDF via [LLamaParse API](https://docs.llamaindex.ai/en/stable/llama_cloud/llama_parse/)
-  3. Generating a summary of the PDF content via OpenAI
-  4. Generating a list of tags describing the PDF content via OpenAI
-  5. Generating embedding vectors of each PDF page via OpenAI
+  3. Generating a summary of the PDF content via the configured LLM API
+  4. Generating a list of tags describing the PDF content via the configured LLM API
+  5. Generating embedding vectors of each PDF page via the configured LLM API
 
-- Regenerate embeddings both for chunks and summaries. This is particularly useful when the used LLM (we use OpenAI) introduces a new embedding model as it happened in January 2024 (https://openai.com/blog/new-embedding-models-and-api-updates). Regenerating the embeddings is done in the `run_regenerate_embeddings.ts` script and performs the following steps:
+- Regenerate embeddings both for chunks and summaries. This is necessary when switching to a different embedding model or provider (we use Mistral). Regenerating the embeddings is done in the `run_regenerate_embeddings.ts` script and performs the following steps:
 
-  - For each chunk in `processed_document_chunks`, generate embedding with the (new) model set in env variable `OPENAI_EMBEDDING_MODEL` and store in column `embedding_temp`.
-  - For each summary in `processed_document_summaries`, generate embedding with the (new) model set in env variable `OPENAI_EMBEDDING_MODEL` and store in column `summary_embedding_temp`.
+  - For each chunk in `processed_document_chunks`, generate embedding with the (new) model set in env variable `LLM_EMBEDDING_MODEL` and store in column `embedding_temp`.
+  - For each summary in `processed_document_summaries`, generate embedding with the (new) model set in env variable `LLM_EMBEDDING_MODEL` and store in column `summary_embedding_temp`.
   - After doing so, the API (https://github.com/technologiestiftung/parla-api) must be changed to use the new model as well.
   - The final migration must happen simultaneously with the API changes by renaming the columns:
     ```
@@ -64,10 +65,15 @@ SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
 SUPABASE_DB_CONNECTION=
 
-#OpenAI Configuration
-OPENAI_API_KEY=
-OPENAI_MODEL=
-OPENAI_EMBEDDING_MODEL=
+# LLM Configuration (summaries, tags and embeddings), any OpenAI-compatible API, e.g. Mistral
+LLM_API_KEY=
+LLM_BASE_URL=https://api.mistral.ai/v1
+LLM_CHAT_MODEL=
+# Optional, sent as reasoning_effort (e.g. low) if set; leave empty for models without reasoning
+LLM_CHAT_REASONING_EFFORT=
+# Context window of the chat model in tokens (e.g. 128000), larger documents are summarized in parts
+LLM_CHAT_CONTEXT_WINDOW=
+LLM_EMBEDDING_MODEL=
 
 # Directory for processing temporary files
 PROCESSING_DIR=

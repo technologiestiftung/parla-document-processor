@@ -1,8 +1,8 @@
 import fs from "fs";
-import { OpenAIApi } from "openai";
+import { OpenAI } from "openai";
 import {
 	ExtractionResult,
-	OpenAITextResponse,
+	LlmTextResponse,
 	ProcessedDocument,
 	RegisteredDocument,
 	SummarizeResult,
@@ -12,11 +12,19 @@ import {
 	generateSummary,
 	generateSummaryForLargeDocument,
 	generateTags,
-} from "../utils/OpenAiUtils.js";
+} from "../utils/LlmUtils.js";
 import { enc } from "../utils/utils.js";
+import { settings } from "../Settings.js";
 
-// We use a model with 128k context size, we reserve 1k for the prompt so that we can send ~127k tokens as payload
-export const MAX_TOKEN_COUNT_FOR_SUMMARY = 128000 - 1000;
+// Otherwise the comparisons with MAX_TOKEN_COUNT_FOR_SUMMARY (NaN) are always false and
+// large documents are sent in one run instead of being split
+if (isNaN(settings.llmChatContextWindow)) {
+	throw new Error("LLM_CHAT_CONTEXT_WINDOW is not set or not a number");
+}
+
+// Context window of the chat model (LLM_CHAT_CONTEXT_WINDOW), we reserve 1k for the prompt
+// so that the rest can be sent as payload
+export const MAX_TOKEN_COUNT_FOR_SUMMARY = settings.llmChatContextWindow - 1000;
 
 export class ProcessingError extends Error {
 	document: RegisteredDocument;
@@ -37,7 +45,7 @@ export class ProcessingError extends Error {
 export class DocumentSummarizor {
 	static async summarize(
 		extractionResult: ExtractionResult,
-		openAi: OpenAIApi,
+		llm: OpenAI,
 	): Promise<SummarizeResult> {
 		const markdownFiles = fs
 			.readdirSync(extractionResult.pagesPath)
@@ -58,24 +66,24 @@ export class DocumentSummarizor {
 
 		// Generate summary
 		const numTokens = enc.encode(completeMarkdown).length;
-		let summary: OpenAITextResponse | undefined = undefined;
+		let summary: LlmTextResponse | undefined = undefined;
 		if (numTokens > MAX_TOKEN_COUNT_FOR_SUMMARY) {
 			console.log(
 				`Number of tokens (${numTokens}) of document ${extractionResult.document.source_url} exceeds max. context size (${MAX_TOKEN_COUNT_FOR_SUMMARY}). Recursively generating summary...`,
 			);
-			summary = await generateSummaryForLargeDocument(completeMarkdown, openAi);
+			summary = await generateSummaryForLargeDocument(completeMarkdown, llm);
 		} else {
 			console.log(
 				`Number of tokens (${numTokens}) of document ${extractionResult.document.source_url} is less than max. context size (${MAX_TOKEN_COUNT_FOR_SUMMARY}). Generating summary in one run...`,
 			);
-			summary = await generateSummary(completeMarkdown, openAi);
+			summary = await generateSummary(completeMarkdown, llm);
 		}
 
 		// Generate embedding
-		const embeddingResponse = await generateEmbedding(summary!.result, openAi);
+		const embeddingResponse = await generateEmbedding(summary!.result, llm);
 
 		// Generate tags
-		const tagsResponse = await generateTags(summary!.result, openAi);
+		const tagsResponse = await generateTags(summary!.result, llm);
 
 		const summaryResponse = {
 			document: extractionResult.document,

@@ -1,6 +1,6 @@
 import fs from "fs";
-import { OpenAIApi } from "openai";
-import { generateEmbedding } from "../utils/OpenAiUtils.js";
+import { OpenAI } from "openai";
+import { generateEmbedding } from "../utils/LlmUtils.js";
 import {
 	enc,
 	splitArrayEqually,
@@ -26,7 +26,7 @@ export const MAGIC_TOKEN_LIMIT = 1500;
 export class DocumentEmbeddor {
 	static async embedd(
 		extractionResult: ExtractionResult,
-		openAi: OpenAIApi,
+		llm: OpenAI,
 	): Promise<EmbeddingResult> {
 		let totalMarkdownData = "";
 		let chunks: Array<Chunk> = [];
@@ -57,7 +57,7 @@ export class DocumentEmbeddor {
 
 		const chunkEmbeddings = await Promise.all(
 			chunks.map(async (chunk) => {
-				const embedding = await generateEmbedding(chunk.content, openAi);
+				const embedding = await generateEmbedding(chunk.content, llm);
 				return { ...chunk, embedding: embedding };
 			}),
 		);
@@ -87,7 +87,7 @@ export class DocumentEmbeddor {
 		registeredDocument: RegisteredDocument,
 		processedDocument: ProcessedDocument,
 		processedDocumentChunks: Array<ProcessedDocumentChunk>,
-		openAi: OpenAIApi,
+		llm: OpenAI,
 	): Promise<EmbeddingResult> {
 		const batchSize = 5;
 		const batches = splitArrayEqually(processedDocumentChunks, batchSize);
@@ -99,10 +99,7 @@ export class DocumentEmbeddor {
 			const chunkBatch = batches[index];
 			const chunkEmbeddings = await Promise.all(
 				chunkBatch.map(async (chunk) => {
-					const embeddingRespone = await generateEmbedding(
-						chunk.content,
-						openAi,
-					);
+					const embeddingRespone = await generateEmbedding(chunk.content, llm);
 					return {
 						...chunk,
 						embedding: [], // not used
@@ -139,11 +136,11 @@ export class DocumentEmbeddor {
 
 	static async regenerateEmbeddingsForSummary(
 		processedDocumentSummaries: ProcessedDocumentSummary,
-		openAi: OpenAIApi,
+		llm: OpenAI,
 	): Promise<SummaryEmbeddingResult> {
 		const embeddingRespone = await generateEmbedding(
 			processedDocumentSummaries.summary,
-			openAi,
+			llm,
 		);
 
 		return {

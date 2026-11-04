@@ -62,18 +62,18 @@ export interface SummarizeResult {
 	outputTokens: number;
 }
 
-export interface OpenAITextResponse {
+export interface LlmTextResponse {
 	result: string;
 	inputTokens: number;
 	outputTokens: number;
 }
 
-export interface OpenAIEmbeddingResponse {
+export interface LlmEmbeddingResponse {
 	embedding: Array<number>;
 	tokenUsage: number;
 }
 
-export interface OpenAITagsResponse {
+export interface LlmTagsResponse {
 	tags: {
 		tags: Array<string>;
 	};
@@ -91,13 +91,16 @@ export interface Settings {
 	postgresConnection: string;
 	supabaseUrl: string;
 	supabaseServiceRoleKey: string;
-	openaAiApiKey: string;
 	processingDirectory: string;
 	allowDeletion: boolean;
 	maxPagesLimit: number;
 	maxPagesForLlmParseLimit: number;
-	openAiModel: string;
-	openAiEmbeddingModel: string;
+	llmApiKey: string;
+	llmBaseUrl: string;
+	llmChatModel: string;
+	llmChatReasoningEffort?: string;
+	llmChatContextWindow: number;
+	llmEmbeddingModel: string;
 	maxDocumentsToProcessInOneRun: number;
 	maxDocumentsToImportPerDocumentType: number;
 	llamaParseToken: string;
