@@ -9,22 +9,21 @@ import {
 	Settings,
 } from "../interfaces/Common.js";
 import { enc, getFileSize, getHash, splitPdf } from "../utils/utils.js";
-// @ts-ignore
-import pdf from "pdf-page-counter";
+import { PDFDocument } from "pdf-lib";
 import puppeteer from "puppeteer";
 import {
 	extractMarkdownViaLLamaParse,
 	PAGE_SEPARATOR,
 } from "../utils/LLamaParseUtils.js";
 
-import pdf2img from "pdf-img-convert";
+import { pdf as pdfToImages } from "pdf-to-img";
 import { createWorker } from "tesseract.js";
 
 const MAGIC_TIMEOUT = 100000;
 
 const MAGIC_TEXT_TOO_SHORT_LENGTH = 32;
-const MAGIC_OCR_WIDTH = 2048;
-const MAGIC_OCR_HEIGHT = 2887;
+// Renders an A4 page (595 x 842 pt) at roughly 2048 x 2897 px
+const MAGIC_OCR_SCALE = 3.44;
 
 export class ExtractError extends Error {
 	document: RegisteredDocument;
@@ -87,8 +86,7 @@ export class DocumentExtractor {
 		}
 
 		let dataBuffer = fs.readFileSync(pathToPdf);
-		const pdfStat = await pdf(dataBuffer);
-		const numPages = pdfStat.numpages;
+		const numPages = (await PDFDocument.load(dataBuffer)).getPageCount();
 		if (numPages > settings.maxPagesLimit) {
 			throw new ExtractError(
 				extractRequest.document,
@@ -139,12 +137,18 @@ export class DocumentExtractor {
 
 				// Fallback in case pdf2md fails to extract any text: Convert to Image, use OCR to extract text
 				if (mdText.length < MAGIC_TEXT_TOO_SHORT_LENGTH) {
-					const image = await pdf2img.convert(`${pagesFolder}/${pdfPageFile}`, {
-						width: MAGIC_OCR_WIDTH,
-						height: MAGIC_OCR_HEIGHT,
-					});
+					const pdfDocument = await pdfToImages(
+						`${pagesFolder}/${pdfPageFile}`,
+						{ scale: MAGIC_OCR_SCALE },
+					);
+					let image: Buffer;
+					try {
+						image = await pdfDocument.getPage(1);
+					} finally {
+						await pdfDocument.destroy();
+					}
 					const pdfImagePage = pdfPageFile.replace(".pdf", ".png");
-					fs.writeFileSync(pdfImagePage, image[0]);
+					fs.writeFileSync(pdfImagePage, image);
 					const extractionResult = await worker.recognize(pdfImagePage);
 					fs.rmSync(pdfImagePage);
 					ocrText = extractionResult.data.text;
